@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}7 kunlik Challenge — Qadam{% endblock %}
+
+{% block body_class %}page-challenge{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <p class="qd-back-link qd-animate-in">
+        <a href="/session/{{ session.id }}/premium">← Premium tahlil</a>
+    </p>
+
+    <section class="qd-challenge-hero qd-animate-in">
+        <span class="qd-challenge-hero__emoji" aria-hidden="true">🌱</span>
+        <h1 class="qd-challenge-hero__title">7 kunlik Relationship Challenge</h1>
+        <p class="qd-challenge-hero__lead">
+            Har kuni bitta kichik, iliq qadam — birgalikda. To‘g‘ri yoki noto‘g‘ri yo‘q,
+            faqat yaqinlik va e’tibor muhim.
+        </p>
+
+        <div class="qd-challenge-progress" aria-label="Challenge jarayoni">
+            <div
+                class="qd-challenge-progress__ring"
+                style="--progress: {{ (challenge.completed_count / challenge.total_days * 100) | round(0) }}%"
+            >
+                <span class="qd-challenge-progress__value">{{ challenge.completed_count }}/{{ challenge.total_days }}</span>
+            </div>
+            <p class="qd-challenge-progress__label">
+                {% if challenge.is_complete %}
+                🎉 Challenge yakunlandi — siz ajoyib qildingiz!
+                {% else %}
+                Bugun {{ challenge.current_day }}-kun
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <div class="qd-challenge-days">
+        {% for day in challenge.days %}
+        <article class="qd-challenge-day qd-animate-in{% if day.completed %} qd-challenge-day--done{% elif day.is_today %} qd-challenge-day--today{% elif day.is_locked %} qd-challenge-day--locked{% endif %}">
+            <div class="qd-challenge-day__head">
+                <span class="qd-challenge-day__badge">Kun {{ day.day }}</span>
+                {% if day.completed %}
+                <span class="qd-challenge-day__status">✓ Bajarildi</span>
+                {% elif day.is_today %}
+                <span class="qd-challenge-day__status qd-challenge-day__status--today">Bugun</span>
+                {% elif day.is_locked %}
+                <span class="qd-challenge-day__status">Keyinroq</span>
+                {% endif %}
+            </div>
+            <h2 class="qd-challenge-day__title">{{ day.title }}</h2>
+            <p class="qd-challenge-day__text">{{ day.text }}</p>
+
+            {% if day.is_today and not day.completed %}
+            <form method="post" action="/session/{{ session.id }}/challenge/complete" class="qd-challenge-day__form">
+                <input type="hidden" name="day" value="{{ day.day }}">
+                <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
+                    Bugun bajardik ✓
+                </button>
+            </form>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if challenge.week_number > 0 and challenge.weekly_prompt %}
+    <section class="qd-card qd-card--weekly qd-animate-in">
+        <span class="qd-premium-section__emoji" aria-hidden="true">💬</span>
+        <h2 class="qd-section-title">Hafta {{ challenge.week_number }} — mini-tahlil</h2>
+        <p class="qd-challenge-weekly__title">{{ challenge.weekly_prompt_title }}</p>
+        <p class="qd-warm-text">{{ challenge.weekly_prompt }}</p>
+        <p class="qd-meta">Har hafta bitta qisqa suhbat — munosabatingizni tirik tutadi.</p>
+    </section>
+    {% endif %}
+
+    <p class="qd-challenge-footer qd-meta">
+        Telegram ulangan bo‘lsa, har kuni yumshoq eslatma olasiz 💛
+    </p>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/challenge.js') }}"></script>
+{% endblock %}

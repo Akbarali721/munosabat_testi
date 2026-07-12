@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Hayotiy vaziyatlar — Qadam{% endblock %}
+
+{% block body_class %}page-quiz{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    {% if not questions_ready %}
+    <section class="qd-empty qd-animate-in">
+        <span class="qd-empty__emoji" aria-hidden="true">🚧</span>
+        <h1 class="qd-empty__title">Bu bosqich ustida ishlayapmiz</h1>
+        <p class="qd-empty__text">
+            Bu bosqich uchun savollar hozircha mavjud emas. Boshidan boshlang yoki boshqa bosqichni tanlang.
+        </p>
+        <a href="/start" class="qd-btn qd-btn--primary">Boshidan boshlash</a>
+    </section>
+    {% else %}
+    <div class="qd-progress qd-animate-in" id="quiz-progress">
+        <div class="qd-progress__row">
+            <span class="qd-progress__label" id="quiz-progress-label">Savol 1/{{ question_count }}</span>
+            <span class="qd-progress__pct" id="quiz-progress-pct">8%</span>
+        </div>
+        <div class="qd-progress__track">
+            <div class="qd-progress__fill" id="quiz-progress-fill" style="width: 8%"></div>
+        </div>
+    </div>
+
+    <form
+        method="post"
+        action="/session/{{ session.id }}/questions"
+        id="quiz-form"
+        class="qd-quiz-form"
+    >
+        <input type="hidden" name="role" value="{{ role }}">
+
+        {% for question in questions %}
+        <section
+            class="quiz-step{% if not loop.first %} quiz-step--hidden{% endif %}"
+            data-step="{{ loop.index0 }}"
+        >
+            <h2 class="qd-scenario-title qd-animate-in">
+                {{ scenario_titles.get(question.scenario_id, question.scenario_id) }}
+            </h2>
+
+            <article class="qd-card qd-card--scenario">
+                <div class="qd-story">
+                    {% for line in question.text.split('\n') %}
+                    {% if line.strip() %}
+                    <p>{{ line }}</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if question.closing %}
+                <p class="qd-closing">{{ question.closing }}</p>
+                {% endif %}
+
+                <div class="qd-options" role="radiogroup">
+                    {% for option in question.options %}
+                    <label class="qd-option">
+                        <input
+                            type="radio"
+                            class="qd-option__input"
+                            name="scenario_{{ question.scenario_id }}"
+                            value="{{ loop.index0 }}"
+                        >
+                        <span class="qd-option__card">
+                            <span class="qd-option__text">{{ option.text }}</span>
+                            <span class="qd-option__check" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                    <path d="M4 9.2l3.2 3.2L14 5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+        {% endfor %}
+
+        <nav class="qd-nav" id="quiz-nav" aria-label="Navigatsiya">
+            <button type="button" class="qd-btn qd-btn--ghost" id="quiz-prev" hidden>← Oldingi</button>
+            <button type="button" class="qd-btn qd-btn--primary" id="quiz-next" disabled>Keyingi →</button>
+        </nav>
+    </form>
+
+    <div class="qd-loading" id="quiz-loading" hidden aria-live="polite">
+        <div class="qd-loading__card">
+            <div class="qd-loading__ring"></div>
+            <p class="qd-loading__text" id="loading-text">{{ loading_messages[0] }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+{% if questions_ready %}
+<script>
+    window.QADAM_LOADING_MESSAGES = {{ loading_messages | tojson }};
+</script>
+<script src="{{ url_for('static', path='/quiz.js') }}"></script>
+{% endif %}
+{% endblock %}

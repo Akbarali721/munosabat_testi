@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Premium tahlil — Qadam{% endblock %}
+
+{% block body_class %}page-premium{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <p class="qd-back-link qd-animate-in">
+        <a href="/session/{{ session.id }}/result?role={{ request.query_params.get('role', 'user_a') }}">← Natijaga qaytish</a>
+    </p>
+
+    {% if not session.is_premium_unlocked %}
+    <section class="qd-premium-lock qd-animate-in">
+        <span class="qd-premium-lock__emoji" aria-hidden="true">🌹</span>
+        <h1 class="qd-premium-lock__title">{{ paywall_headline }}</h1>
+        <p class="qd-premium-lock__lead">{{ paywall_lead }}</p>
+
+        <p class="qd-premium-gate__locked">❤️ Bugungi eng qiziqarli natijalar hali ochilmagan.</p>
+        <ul class="qd-premium-lock__features">
+            <li>✨ Sherigingiz siz haqingizda eng ko‘p qadrlaydigan fazilatlar</li>
+            <li>❤️ Sizlarning eng kuchli yashirin tomoningiz</li>
+            <li>🌱 7 kunlik Relationship Challenge</li>
+            <li>💌 Sherigingizga yuborish mumkin bo‘lgan romantik xabar</li>
+            <li>🎁 Maxsus Relationship Insight</li>
+        </ul>
+
+        <div class="qd-card qd-card--premium qd-premium-lock__card">
+            <p class="qd-premium-lock__price">{{ "{:,}".format(premium_price).replace(",", " ") }} so‘m</p>
+            <p class="qd-premium-lock__note">{{ paywall_tagline }}</p>
+            {% if payment_demo %}
+            <p class="qd-premium-lock__demo">Hozir demo rejim — bir bosishda ochiladi. Haqiqiy to‘lov keyinroq ulanadi.</p>
+            {% endif %}
+            <form method="post" action="/session/{{ session.id }}/premium/unlock">
+                <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
+                    To‘liq tahlilni ochish
+                </button>
+            </form>
+        </div>
+    </section>
+
+    {% else %}
+    <div class="qd-premium-splash" id="premium-splash" aria-live="polite">
+        <div class="qd-premium-splash__glow" aria-hidden="true"></div>
+        <p class="qd-premium-splash__text">{{ unlock_splash }}</p>
+    </div>
+
+    <div class="qd-premium-experience" id="premium-experience" hidden>
+        <section class="qd-premium-letter qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">💌</span>
+            <h1 class="qd-result-headline">{{ premium.headline }}</h1>
+            <p class="qd-premium-subtitle">{{ premium.subtitle }}</p>
+            <p class="qd-meta">{{ stage_labels[session.relationship_stage] }}</p>
+            <div class="qd-premium-letter__body">
+                {% for paragraph in premium.opening_message.split('\n\n') %}
+                {% if paragraph.strip() %}
+                <p>{{ paragraph.strip() }}</p>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="qd-card qd-card--warm qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">❤️</span>
+            <h2 class="qd-section-title">Sizlarning juftlik xulosasi</h2>
+            <p class="qd-warm-text qd-premium-highlight">{{ premium.profile_summary }}</p>
+        </section>
+
+        {% for insight in premium.partner_insights %}
+        <section class="qd-card qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">{{ insight.emoji }}</span>
+            <h2 class="qd-section-title">{{ insight.heading }}</h2>
+            <ul class="qd-premium-traits">
+                {% for trait in insight.traits %}
+                <li>{{ trait }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+
+        <section class="qd-card qd-card--premium qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">🗺️</span>
+            <h2 class="qd-section-title">Bir-biringizni yaxshiroq tushunish xaritasi</h2>
+            <p class="qd-warm-text">{{ premium.map_intro }}</p>
+            <div class="qd-map-list">
+                {% for item in premium.map_items %}
+                <article class="qd-map-item" data-map-percent="{{ item.percent }}">
+                    <div class="qd-map-item__head">
+                        <span class="qd-map-item__label">{{ item.label }}</span>
+                        <span class="qd-map-item__pct">{{ item.percent }}%</span>
+                    </div>
+                    <div class="qd-map-item__track">
+                        <div class="qd-map-item__fill" data-map-fill style="width: 0%"></div>
+                    </div>
+                    <p class="qd-map-item__note">{{ item.note }} · {{ item.warmth }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="qd-card qd-card--insight qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">🎁</span>
+            <h2 class="qd-section-title">Maxsus Relationship Insight</h2>
+            <p class="qd-warm-text">{{ premium.relationship_insight }}</p>
+        </section>
+
+        <section class="qd-card qd-card--hidden-strength qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">✨</span>
+            <h2 class="qd-section-title">Sizlarning eng kuchli yashirin tomoningiz</h2>
+            <p class="qd-warm-text qd-premium-highlight">{{ premium.hidden_strength }}</p>
+        </section>
+
+        <section class="qd-card qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">🌟</span>
+            <h2 class="qd-section-title">5 ta kuchli jihat</h2>
+            <p class="qd-premium-section__lead">{{ premium.strengths_intro }}</p>
+            <ol class="qd-premium-list">
+                {% for strength in premium.strengths %}
+                <li>{{ strength }}</li>
+                {% endfor %}
+            </ol>
+        </section>
+
+        <section class="qd-card qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">🌱</span>
+            <h2 class="qd-section-title">Munosabatni yaxshilash uchun 5 ta tavsiya</h2>
+            <p class="qd-premium-section__lead">{{ premium.suggestions_intro }}</p>
+            <ol class="qd-premium-list">
+                {% for tip in premium.suggestions %}
+                <li>{{ tip }}</li>
+                {% endfor %}
+            </ol>
+        </section>
+
+        <section class="qd-card qd-card--challenge qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">📅</span>
+            <h2 class="qd-section-title">7 kunlik Relationship Challenge</h2>
+            <p class="qd-premium-section__lead">{{ premium.challenge_intro }}</p>
+            <div class="qd-exercises">
+                {% for exercise in premium.daily_exercises %}
+                <article class="qd-exercise qd-exercise--premium">
+                    <span class="qd-exercise__day">Kun {{ exercise.day }}</span>
+                    <h3 class="qd-exercise__title">{{ exercise.title }}</h3>
+                    <p class="qd-exercise__text">{{ exercise.text }}</p>
+                </article>
+                {% endfor %}
+            </div>
+            <a href="/session/{{ session.id }}/challenge" class="qd-btn qd-btn--secondary qd-btn--full qd-challenge-link">
+                Challenge sahifasini ochish →
+            </a>
+        </section>
+
+        <section class="qd-card qd-card--share qd-premium-section" data-premium-section>
+            <span class="qd-premium-section__emoji" aria-hidden="true">💌</span>
+            <h2 class="qd-section-title">{{ premium.share_heading }}</h2>
+            <p class="qd-premium-section__lead">Nusxalang va Telegram orqali yuboring — bu sizning kichik, iliq qadamingiz.</p>
+            <textarea id="premium-share-text" class="qd-share-text" readonly>{{ premium.share_message }}</textarea>
+            <div class="qd-share-actions">
+                <button type="button" class="qd-btn qd-btn--primary qd-btn--full" id="premium-copy-btn">
+                    Chiroyli matnni nusxalash
+                </button>
+                <a
+                    class="qd-btn qd-btn--telegram qd-btn--full"
+                    id="premium-telegram-share"
+                    href="https://t.me/share/url?text={{ premium.share_message | urlencode }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Telegramda yuborish
+                </a>
+            </div>
+        </section>
+
+        <p class="qd-premium-closing" data-premium-section>
+            Siz allaqachon muhim qadam qo‘ydingiz. Endi kichik, samimiy harakatlar — sizlarni yanada yaqinlashtiradi. 💛
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+{% if session.is_premium_unlocked %}
+<script src="{{ url_for('static', path='/premium_experience.js') }}"></script>
+{% endif %}
+{% endblock %}

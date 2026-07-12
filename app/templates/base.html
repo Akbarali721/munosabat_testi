@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Qadam{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/qadam.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="qadam-app {% block body_class %}{% endblock %}">
+    <header class="qd-header">
+        <div class="qd-shell qd-header__inner">
+            <div class="qd-brand">
+                <a href="/" class="qd-logo">Qadam</a>
+                <p class="qd-brand-sub">O‘zingizni anglash sari bir qadam</p>
+            </div>
+            <span class="qd-pill">❤️ Munosabat tahlili</span>
+        </div>
+    </header>
+    <main class="qd-main">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="qd-footer">
+        <div class="qd-shell">
+            {% block footer %}
+            <p class="qd-footer-quote">{{ footer_quote }}</p>
+            {% endblock %}
+        </div>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

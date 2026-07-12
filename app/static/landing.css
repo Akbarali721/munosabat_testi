@@ -1,0 +1,312 @@
+/* Qadam landing — old love-app language, modernized */
+
+.page-landing {
+    --love-bg: #eef3ff;
+    --love-ink: #24133f;
+    --love-muted: #7a6f92;
+    --love-primary: #7c3aed;
+    --love-primary-dark: #5b21b6;
+    --love-primary-soft: #f0e7ff;
+    --love-border: #eadff8;
+    --love-shadow: 0 18px 45px rgb(89 54 149 / 0.14);
+
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--love-ink);
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 8%, #ffe1ef 0, transparent 28%),
+        radial-gradient(circle at 90% 0%, #dbe8ff 0, transparent 32%),
+        linear-gradient(180deg, #f6efff 0%, var(--love-bg) 48%, #f8fbff 100%);
+}
+
+.page-landing .qd-header,
+.page-landing .qd-footer {
+    display: none;
+}
+
+.page-landing main.container {
+    width: 100%;
+    max-width: none;
+    padding: 14px 14px 28px;
+    margin: 0;
+}
+
+.landing-shell {
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+.landing-card {
+    position: relative;
+    overflow: hidden;
+    background: rgb(255 255 255 / 0.94);
+    border: 1px solid rgb(255 255 255 / 0.85);
+    border-radius: 28px;
+    box-shadow: var(--love-shadow);
+    padding: 22px 20px 24px;
+}
+
+.landing-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 140px;
+    background: linear-gradient(135deg, rgb(255 233 243 / 0.92), rgb(233 241 255 / 0.92));
+    pointer-events: none;
+}
+
+.landing-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Centered logo */
+.landing-brand {
+    text-align: center;
+    margin-bottom: 18px;
+    padding-top: 4px;
+}
+
+.landing-logo {
+    display: inline-block;
+    font-size: clamp(2.4rem, 11vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--love-primary-dark);
+    text-decoration: none;
+}
+
+.landing-logo-sub {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--love-primary);
+}
+
+/* Left-aligned hero */
+.landing-hero {
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+.landing-kicker {
+    display: inline-block;
+    margin: 0 0 10px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.78);
+    border: 1px solid var(--love-border);
+    color: var(--love-primary-dark);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.landing-title {
+    margin: 0 0 12px;
+    font-size: clamp(1.85rem, 7.5vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+    color: var(--love-ink);
+}
+
+.landing-lead {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.58;
+    color: var(--love-muted);
+}
+
+/* Three benefit cards — compact, always visible */
+.landing-stages {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.stage-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 56px;
+    padding: 11px 12px;
+    border: 1px solid var(--love-border);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgb(91 33 182 / 0.05);
+}
+
+.stage-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: var(--love-primary-soft);
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.stage-copy {
+    min-width: 0;
+}
+
+.stage-title {
+    margin: 0 0 2px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--love-ink);
+}
+
+.stage-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--love-muted);
+}
+
+/* Big gradient CTA */
+.landing-cta-block {
+    margin-bottom: 18px;
+}
+
+.btn-landing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(135deg, #8b5cf6, var(--love-primary));
+    box-shadow: 0 12px 24px rgb(124 58 237 / 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-landing:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgb(124 58 237 / 0.34);
+}
+
+.btn-landing:active {
+    transform: translateY(0);
+}
+
+.landing-helper {
+    margin: 10px 0 0;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--love-muted);
+}
+
+.landing-trust {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--love-muted);
+    font-style: italic;
+}
+
+/* How it works — compact, not dashboard-like */
+.landing-how {
+    padding-top: 4px;
+    border-top: 1px solid rgb(234 223 248 / 0.9);
+}
+
+.landing-section-title {
+    margin: 14px 0 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--love-muted);
+}
+
+.how-timeline {
+    display: grid;
+    gap: 8px;
+}
+
+.how-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: #faf7ff;
+}
+
+.how-num {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--love-primary);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.how-text {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--love-ink);
+}
+
+.landing-footer-quote {
+    margin: 16px 0 0;
+    padding-top: 14px;
+    border-top: 1px dashed #d9c9f5;
+    font-size: 0.9rem;
+    font-style: italic;
+    line-height: 1.55;
+    text-align: center;
+    color: var(--love-muted);
+}
+
+@media (min-width: 640px) {
+    .page-landing main.container {
+        padding: 28px 16px 40px;
+    }
+
+    .landing-card {
+        padding: 26px 24px 28px;
+    }
+
+    .landing-brand {
+        margin-bottom: 22px;
+    }
+
+    .landing-title {
+        font-size: 2.4rem;
+    }
+
+    .landing-lead {
+        font-size: 1.02rem;
+    }
+}
+
+@media (min-width: 760px) {
+    .landing-shell {
+        padding-top: 8px;
+    }
+}

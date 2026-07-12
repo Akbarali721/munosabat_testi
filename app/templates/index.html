@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Qadam — Munosabat tahlili{% endblock %}
+
+{% block body_class %}page-landing{% endblock %}
+
+{% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', path='/landing.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="landing-shell">
+    <article class="landing-card">
+        <header class="landing-brand">
+            <a href="/" class="landing-logo">Qadam</a>
+            <p class="landing-logo-sub">Munosabat tahlili</p>
+        </header>
+
+        <section class="landing-hero">
+            <p class="landing-kicker">Ikki kishi uchun yaratilgan</p>
+            <h1 class="landing-title">
+                Juftingiz bilan munosabatingizni<br>
+                yaxshilashni xohlaysizmi?
+            </h1>
+            <p class="landing-lead">
+                Qadam — juftliklarga bir-birini yaxshiroq tushunish va munosabatlarini
+                mustahkamlashga yordam beradigan platforma. Bu test emas — hayotiy vaziyatlar
+                orqali siz va sherigingiz qanday o‘ylashingizni ko‘rasiz.
+            </p>
+        </section>
+
+        <section class="landing-stages" aria-label="Kimlar uchun">
+            <article class="stage-card">
+                <span class="stage-icon" aria-hidden="true">🌱</span>
+                <div class="stage-copy">
+                    <h3 class="stage-title">Endi tanishayotganlar</h3>
+                    <p class="stage-desc">Bir-biringizning xarakteri va qarashlarini asta-sekin bilib oling.</p>
+                </div>
+            </article>
+            <article class="stage-card">
+                <span class="stage-icon" aria-hidden="true">💞</span>
+                <div class="stage-copy">
+                    <h3 class="stage-title">Yangi turmush qurganlar</h3>
+                    <p class="stage-desc">Yangi hayotga moslashishda bir-biringizni yaxshiroq tushuning.</p>
+                </div>
+            </article>
+            <article class="stage-card">
+                <span class="stage-icon" aria-hidden="true">💍</span>
+                <div class="stage-copy">
+                    <h3 class="stage-title">Turmush qurganlar</h3>
+                    <p class="stage-desc">Kundalik hayotdagi yaqinlik, mas’uliyat va hamkorligingizni ko‘ring.</p>
+                </div>
+            </article>
+        </section>
+
+        <div class="landing-cta-block">
+            <a href="/start" class="btn-landing">Tahlilni boshlash</a>
+            <p class="landing-helper">
+                Taxminan 5 daqiqa · Bepul natija · Maxfiylik saqlanadi
+            </p>
+            <p class="landing-trust">
+                Bu sizni baholamaydi — faqat yaxshiroq tushunishga yordam beradi.
+            </p>
+        </div>
+
+        <section class="landing-how">
+            <h2 class="landing-section-title">Qadam qanday ishlaydi?</h2>
+            <div class="how-timeline">
+                <article class="how-step">
+                    <span class="how-num">1</span>
+                    <p class="how-text">Profilni to‘ldirasiz</p>
+                </article>
+                <article class="how-step">
+                    <span class="how-num">2</span>
+                    <p class="how-text">12 ta vaziyatga javob berasiz</p>
+                </article>
+                <article class="how-step">
+                    <span class="how-num">3</span>
+                    <p class="how-text">Havolani sherigingizga yuborasiz</p>
+                </article>
+                <article class="how-step">
+                    <span class="how-num">4</span>
+                    <p class="how-text">U ham o‘z tomondan javob beradi</p>
+                </article>
+                <article class="how-step">
+                    <span class="how-num">5</span>
+                    <p class="how-text">Qadam javoblaringizni tahlil qiladi</p>
+                </article>
+            </div>
+        </section>
+
+        <p class="landing-footer-quote">
+            Ba’zan munosabatni o‘zgartirish uchun bitta samimiy suhbat yetadi.
+        </p>
+    </article>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

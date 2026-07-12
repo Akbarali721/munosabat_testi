@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Boshlash — Munosabat tahlili{% endblock %}
+
+{% block body_class %}page-start{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <section class="qd-hero qd-animate-in">
+        <h1 class="qd-hero__title">
+            Keling, boshlaymiz
+        </h1>
+        <p class="qd-hero__subtitle">
+            Ismingiz va munosabat bosqichingizni tanlang.
+        </p>
+        <p class="qd-hero__desc">
+            Keyin 12 ta qisqa, hayotiy vaziyatga javob berasiz.
+            Sherigingiz keyinroq alohida javob beradi — hozir faqat o‘zingiz haqingizda.
+        </p>
+        <button type="button" class="qd-btn qd-btn--hero" id="start-scroll-btn">
+            Tahlilni boshlash
+        </button>
+    </section>
+
+    <section class="qd-card qd-card--form qd-animate-in qd-animate-in--delay" id="start-form-section">
+        <form method="post" action="/start" class="qd-form" id="start-form">
+            <input type="hidden" name="init_data" id="init_data" value="">
+            <div class="qd-field">
+                <label class="qd-label" for="name">Sizni nima deb chaqirishimiz mumkin?</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="qd-input"
+                    required
+                    maxlength="100"
+                    placeholder="Ismingizni kiriting"
+                    autocomplete="name"
+                >
+            </div>
+
+            <fieldset class="qd-field qd-field--fieldset">
+                <legend class="qd-label">Jinsingiz <span class="qd-label-hint">(savollar sizga moslashtiriladi)</span></legend>
+                <div class="qd-choice-row qd-choice-row--2">
+                    {% for g in genders %}
+                    <label class="qd-chip">
+                        <input type="radio" name="gender" value="{{ g.value }}" required>
+                        <span class="qd-chip__body">
+                            <span class="qd-chip__emoji" aria-hidden="true">
+                                {% if g.value == 'male' %}👨{% else %}👩{% endif %}
+                            </span>
+                            <span class="qd-chip__text">{{ gender_labels[g] }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <fieldset class="qd-field qd-field--fieldset">
+                <legend class="qd-label">Qaysi bosqich sizga yaqinroq?</legend>
+                <div class="qd-choice-col">
+                    {% for s in stages %}
+                    <label class="qd-stage">
+                        <input type="radio" name="relationship_stage" value="{{ s.value }}" required>
+                        <span class="qd-stage__body">
+                            <span class="qd-stage__emoji" aria-hidden="true">{{ stage_icons[s] }}</span>
+                            <span class="qd-stage__copy">
+                                <span class="qd-stage__text">{{ stage_labels[s] }}</span>
+                                <span class="qd-stage__desc">{{ stage_descriptions[s] }}</span>
+                            </span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="qd-field qd-field--optional">
+                <label class="qd-label" for="anniversary_date">
+                    Munosabat boshlangan sana
+                    <span class="qd-label-hint">(ixtiyoriy — yubiley eslatmasi uchun)</span>
+                </label>
+                <input
+                    type="date"
+                    id="anniversary_date"
+                    name="anniversary_date"
+                    class="qd-input"
+                >
+            </div>
+
+            <button type="submit" class="qd-btn qd-btn--primary qd-btn--full" id="start-submit" disabled>
+                Davom etish
+            </button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/start.js') }}"></script>
+{% endblock %}

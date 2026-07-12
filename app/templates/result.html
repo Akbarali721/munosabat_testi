@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Natija — Munosabat tahlili{% endblock %}
+
+{% block body_class %}page-result page-result-experience{% endblock %}
+
+{% block content %}
+<div class="qd-shell" id="result-root" data-session-id="{{ session.id }}">
+    <section class="qd-result-intro" id="result-intro">
+        <header class="qd-reveal-header qd-animate-in">
+            <h1 class="qd-result-headline">Sizlarning munosabat tahlili tayyor</h1>
+            <p class="qd-reveal-names">{{ experience.partner_names }}</p>
+            <p class="qd-meta">{{ experience.stage_label }}</p>
+        </header>
+
+        <article class="qd-card qd-card--score qd-animate-in qd-animate-in--delay">
+            <p class="qd-score-label">Bir-biringizni tushunish darajasi</p>
+            <p class="qd-score-value">{{ experience.score }}%</p>
+            <p class="qd-warm-text">{{ experience.intro_summary }}</p>
+        </article>
+
+        <div class="qd-reveal-nav">
+            <button type="button" class="qd-btn qd-btn--primary qd-btn--full" id="result-continue-btn">
+                Davom etish
+            </button>
+        </div>
+    </section>
+
+    <section class="qd-result-details" id="result-details" hidden>
+        <header class="qd-reveal-header qd-animate-in">
+            <h1 class="qd-result-headline qd-result-headline--sm">Sizlarning bepul tahlilingiz</h1>
+            <p class="qd-meta">{{ experience.partner_names }} · {{ experience.stage_label }}</p>
+        </header>
+
+        {% for block in experience.free_blocks %}
+        <article class="qd-card qd-result-block qd-animate-in">
+            <p class="qd-result-block__emoji" aria-hidden="true">{{ block.emoji }}</p>
+            <h2 class="qd-section-title">{{ block.title }}</h2>
+            <p class="qd-warm-text">{{ block.body }}</p>
+        </article>
+        {% endfor %}
+
+        <article class="qd-card qd-card--personal qd-animate-in">
+            <p class="qd-result-block__emoji" aria-hidden="true">🪞</p>
+            <h2 class="qd-section-title">{{ experience.personal_title }}</h2>
+            <p class="qd-warm-text">{{ experience.personal_body }}</p>
+        </article>
+
+        <section class="qd-premium-section-wrap qd-animate-in">
+            <div class="qd-premium-gate__divider" aria-hidden="true">━━━━━━━━━━━━━━</div>
+            <h2 class="qd-premium-section-wrap__title">{{ experience.premium_headline }}</h2>
+            <p class="qd-warm-text">{{ experience.premium_lead }}</p>
+            <p class="qd-meta qd-premium-section-wrap__sub">{{ experience.premium_sublead }}</p>
+
+            {% for block in experience.premium_blocks %}
+            <article class="qd-card qd-result-premium{% if block.locked %} qd-result-premium--locked{% endif %}">
+                <div class="qd-result-premium__head">
+                    {% if block.locked %}
+                    <span class="qd-result-premium__lock" aria-hidden="true">🔒</span>
+                    {% else %}
+                    <span class="qd-result-premium__lock" aria-hidden="true">✨</span>
+                    {% endif %}
+                    <h3 class="qd-result-premium__title">{{ block.title }}</h3>
+                </div>
+
+                {% if block.locked %}
+                <div class="qd-result-premium__blur" aria-hidden="true">
+                    <p>{{ block.teaser }}</p>
+                    <p>Javoblaringiz asosida shaxsiy xulosa tayyorlandi…</p>
+                    <p>To‘liq matn ochilgach ko‘rinadi…</p>
+                </div>
+                <p class="qd-result-premium__hint">To‘liq ochilganda bu yerda sizlarga mos tahlil chiqadi</p>
+                {% else %}
+                <div class="qd-result-premium__body qd-result-premium__body--open">
+                    {% if block.body %}
+                    <p class="qd-warm-text">{{ block.body }}</p>
+                    {% endif %}
+                    {% if block.items %}
+                    <ul class="qd-premium-list">
+                        {% for item in block.items %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+
+            {% if not experience.premium_unlocked %}
+            <div class="qd-card qd-card--premium qd-premium-cta">
+                <form method="post" action="/session/{{ session.id }}/premium/unlock">
+                    <input type="hidden" name="role" value="{{ viewer_role }}">
+                    <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
+                        To‘liq tahlilni ikkalangiz uchun ochish — {{ "{:,}".format(premium_price).replace(",", " ") }} so‘m
+                    </button>
+                </form>
+                <p class="qd-premium-cta__note">Bir marta to‘lov qilinadi. Natija ikkalangizga ham ochiladi.</p>
+            </div>
+            {% else %}
+            <p class="qd-premium-unlocked-note">✅ To‘liq tahlil ochilgan — ikkalangiz ham ko‘ra olasiz.</p>
+            <a href="/session/{{ session.id }}/challenge" class="qd-btn qd-btn--secondary qd-btn--full">
+                7 kunlik Challenge sahifasini ochish
+            </a>
+            {% endif %}
+        </section>
+
+        <a href="/" class="qd-btn qd-btn--ghost qd-btn--full qd-reveal-footer-link">
+            Yangi tahlil boshlash
+        </a>
+    </section>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script>
+    window.QADAM_RESULT = {
+        sessionId: "{{ session.id }}",
+        opened: {{ 'true' if request.query_params.get('opened') == '1' else 'false' }}
+    };
+</script>
+<script src="{{ url_for('static', path='/result_reveal.js') }}"></script>
+{% endblock %}

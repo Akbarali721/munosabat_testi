@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Natija — Qadam{% endblock %}
+
+{% block body_class %}page-waiting{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <section class="qd-invite qd-animate-in">
+        <span class="qd-invite__emoji" aria-hidden="true">⏳</span>
+        <h1 class="qd-invite__title">Natija ochilmoqda…</h1>
+        <p class="qd-invite__subtitle">Telegram orqali tekshirilmoqda.</p>
+    </section>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+    var initData = (tg && tg.initData) || "";
+    if (!initData) {
+        document.querySelector(".qd-invite__subtitle").textContent =
+            "Natijani faqat Telegram botidagi «Natijani ko‘rish» tugmasi orqali oching.";
+        return;
+    }
+    var url = new URL(window.location.href);
+    url.searchParams.set("initData", initData);
+    window.location.replace(url.toString());
+})();
+</script>
+{% endblock %}

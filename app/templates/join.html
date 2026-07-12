@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Qo‘shilish — Qadam{% endblock %}
+
+{% block body_class %}page-start{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <section class="qd-hero qd-animate-in" style="padding-bottom: 0.5rem;">
+        <p class="qd-meta" style="margin-bottom: 0.75rem;">Munosabat tahlili</p>
+        <h1 class="qd-hero__title" style="font-size: 1.75rem;">
+            Xush kelibsiz
+        </h1>
+        <p class="qd-hero__desc">
+            <strong>{{ user_a.name }}</strong> allaqachon javob berdi. Endi navbat sizda —
+            xuddi shu hayotiy vaziyatlarga o‘z fikringizni ayting.
+        </p>
+        <p class="qd-meta">Bu yerda to‘g‘ri yoki noto‘g‘ri javob yo‘q. Faqat siz qanday his qilishingiz muhim.</p>
+    </section>
+
+    <section class="qd-card qd-card--form qd-animate-in qd-animate-in--delay">
+        <form method="post" action="/session/{{ session.id }}/join" class="qd-form" id="join-form">
+            <input type="hidden" name="init_data" id="init_data" value="">
+            <div class="qd-field">
+                <label class="qd-label" for="name">Sizni nima deb chaqirishimiz mumkin?</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="qd-input"
+                    required
+                    maxlength="100"
+                    placeholder="Ismingizni kiriting"
+                    autocomplete="name"
+                >
+            </div>
+
+            <fieldset class="qd-field qd-field--fieldset">
+                <legend class="qd-label">Jinsingiz</legend>
+                <div class="qd-choice-row qd-choice-row--2">
+                    {% for g in genders %}
+                    <label class="qd-chip">
+                        <input type="radio" name="gender" value="{{ g.value }}" required>
+                        <span class="qd-chip__body">
+                            <span class="qd-chip__emoji" aria-hidden="true">
+                                {% if g.value == 'male' %}👨{% else %}👩{% endif %}
+                            </span>
+                            <span class="qd-chip__text">{{ gender_labels[g] }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="qd-field qd-field--optional">
+                <label class="qd-label" for="birthday">
+                    Tug‘ilgan kuningiz
+                    <span class="qd-label-hint">(ixtiyoriy — tabrik eslatmasi uchun)</span>
+                </label>
+                <input
+                    type="date"
+                    id="birthday"
+                    name="birthday"
+                    class="qd-input"
+                >
+            </div>
+
+            <button type="submit" class="qd-btn qd-btn--primary qd-btn--full" id="join-submit" disabled>
+                Qo‘shilish va boshlash
+            </button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const form = document.getElementById("join-form");
+    if (!form) return;
+    const submitBtn = document.getElementById("join-submit");
+    const initDataInput = document.getElementById("init_data");
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        if (initDataInput && tg.initData) initDataInput.value = tg.initData;
+    }
+    function validate() {
+        const name = form.querySelector("#name");
+        const gender = form.querySelector('input[name="gender"]:checked');
+        submitBtn.disabled = !(name && name.value.trim() && gender);
+    }
+    form.querySelectorAll(".qd-chip").forEach((label) => {
+        label.addEventListener("click", () => {
+            setTimeout(() => {
+                form.querySelectorAll(".qd-chip").forEach((l) => {
+                    const input = l.querySelector("input");
+                    const body = l.querySelector(".qd-chip__body");
+                    if (body && input) body.classList.toggle("is-selected", input.checked);
+                });
+                validate();
+            }, 0);
+        });
+    });
+    form.querySelector("#name").addEventListener("input", validate);
+    form.addEventListener("submit", () => {
+        if (tg && initDataInput && tg.initData) initDataInput.value = tg.initData;
+    });
+    validate();
+})();
+</script>
+{% endblock %}
