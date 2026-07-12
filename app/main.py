@@ -3,11 +3,14 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.database import Base, engine, get_db
 from app.routers import challenge, cron, pages, payment, telegram
 from app.services import seed_scenarios
 from app.services.migrate import migrate_db
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 @asynccontextmanager
@@ -28,8 +31,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-static_dir = Path(__file__).resolve().parent / "static"
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# Railway / reverse-proxy: trust X-Forwarded-Proto so url_for uses https
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static",
+)
 app.include_router(pages.router)
 app.include_router(challenge.router)
 app.include_router(payment.router)
