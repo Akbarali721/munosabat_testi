@@ -1,3 +1,10 @@
+"""Telegram update handlers (httpx client — not aiogram)."""
+
+from __future__ import annotations
+
+import logging
+import re
+
 from sqlalchemy.orm import Session as DbSession
 
 from app.bot.telegram_client import telegram_client
@@ -16,20 +23,42 @@ from app.copy.notifications import (
 from app.models import Gender, Participant, ParticipantRole, Session, SessionStatus
 from app.services.invite_token import get_session_by_invite_token
 
+logger = logging.getLogger(__name__)
+
 PENDING_PARTNER_NAME = "__pending__"
+
+# /start or /start@BotName — capture optional deep-link payload
+_START_RE = re.compile(r"^/start(?:@\w+)?(?:\s+(.+))?$", re.IGNORECASE | re.DOTALL)
 
 
 def _webapp_start_url() -> str:
+    """Initiator Mini App entry (existing /start page)."""
     return f"{get_settings().webapp_base_url}/start"
 
 
 def _partner_entry_url(session_id: str) -> str:
-    """Partner opens join (or questions if profile already set)."""
     return f"{get_settings().webapp_base_url}/session/{session_id}/join"
 
 
 def _result_webapp_url(session_id: str) -> str:
     return f"{get_settings().webapp_base_url}/session/{session_id}/result"
+
+
+def parse_start_payload(text: str) -> str | None:
+    """
+    Parse a /start command.
+
+    Returns:
+      - None if the message is not a /start command
+      - "" for plain /start (no deep-link argument)
+      - the raw payload string otherwise (e.g. rel_invite_<TOKEN>)
+    """
+    raw = (text or "").strip()
+    match = _START_RE.match(raw)
+    if not match:
+        return None
+    payload = match.group(1)
+    return (payload or "").strip()
 
 
 async def handle_update(update: dict, db: DbSession) -> None:
@@ -42,23 +71,36 @@ async def handle_update(update: dict, db: DbSession) -> None:
     if not chat_id:
         return
 
-    text = message["text"].strip()
-    if not text.startswith("/start"):
+    text = message["text"]
+    payload = parse_start_payload(text)
+    if payload is None:
         return
 
-    parts = text.split(maxsplit=1)
-    payload = parts[1] if len(parts) > 1 else ""
+    # 1) Plain /start → main menu (never invite lookup)
+    if payload == "":
+        logger.info("start: plain menu chat_id=%s", chat_id)
+        await _send_welcome_with_start(chat_id)
+        return
 
+    # 2) Relationship invite deep-link
     if payload.startswith("rel_invite_"):
-        token = payload.removeprefix("rel_invite_")
+        token = payload.removeprefix("rel_invite_").strip()
+        logger.info(
+            "start: rel_invite chat_id=%s token_len=%s",
+            chat_id,
+            len(token),
+        )
         await _handle_rel_invite(chat_id, token, db)
         return
 
+    # Legacy User1 link_{session_id} deep-link
     if payload.startswith("link_"):
-        session_id = payload.removeprefix("link_")
+        session_id = payload.removeprefix("link_").strip()
         await _link_user_a(chat_id, session_id, db)
         return
 
+    # 3) Unknown payload → main menu (no technical error)
+    logger.info("start: unknown payload → menu chat_id=%s payload=%r", chat_id, payload[:64])
     await _send_welcome_with_start(chat_id)
 
 
@@ -67,19 +109,25 @@ async def _send_welcome_with_start(chat_id: int) -> None:
     await telegram_client.send_message(
         chat_id,
         telegram_welcome(),
-        reply_markup=telegram_client.start_relationship_reply_keyboard(start_url),
-    )
-    await telegram_client.send_message(
-        chat_id,
-        "Yoki shu tugma orqali oching:",
         button_text="❤️ Munosabat testini boshlash",
         web_app_url=start_url,
     )
 
 
 async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
+    # Empty token after rel_invite_ prefix → same as not found
+    if not token:
+        logger.warning("rel_invite: empty token chat_id=%s", chat_id)
+        await telegram_client.send_message(chat_id, invite_invalid())
+        return
+
     session = get_session_by_invite_token(db, token)
     if not session:
+        logger.warning(
+            "rel_invite: token not found chat_id=%s token_prefix=%r",
+            chat_id,
+            token[:8],
+        )
         await telegram_client.send_message(chat_id, invite_invalid())
         return
 

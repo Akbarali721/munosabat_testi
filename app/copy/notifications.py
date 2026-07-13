@@ -5,8 +5,8 @@ from __future__ import annotations
 
 def telegram_welcome() -> str:
     return (
-        "Salom! Men Qadam botiman — juftliklar uchun munosabat tajribasi.\n\n"
-        "Boshlash uchun quyidagi tugmani bosing 👇"
+        "Assalomu alaykum! Qadam’ga xush kelibsiz.\n"
+        "Munosabatlaringizni yaxshiroq tushunish uchun testni boshlashingiz mumkin."
     )
 
 

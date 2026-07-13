@@ -17,8 +17,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.bot.handlers import PENDING_PARTNER_NAME, _handle_rel_invite
+from app.bot.handlers import (
+    PENDING_PARTNER_NAME,
+    _handle_rel_invite,
+    handle_update,
+    parse_start_payload,
+)
 from app.config import Settings
+from app.copy.notifications import invite_invalid, invite_partner_welcome, telegram_welcome
 from app.database import Base, get_db
 from app.main import app
 from app.models import (
@@ -97,6 +103,133 @@ class TelegramAuthUnitTests(unittest.TestCase):
         self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
         settings.telegram_bot_username = "@"
         self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
+
+    def test_parse_start_payload_variants(self):
+        self.assertEqual(parse_start_payload("/start"), "")
+        self.assertEqual(parse_start_payload("/start@qadam_loyihaBot"), "")
+        self.assertEqual(parse_start_payload("/start rel_invite_abc"), "rel_invite_abc")
+        self.assertEqual(
+            parse_start_payload("/start@qadam_loyihaBot rel_invite_abc"),
+            "rel_invite_abc",
+        )
+        self.assertEqual(parse_start_payload("/start something_else"), "something_else")
+        self.assertIsNone(parse_start_payload("/help"))
+        self.assertIsNone(parse_start_payload("start"))
+
+
+class StartCommandHandlerTests(unittest.TestCase):
+    """Plain /start vs rel_invite_ deep-link must not collide."""
+
+    def setUp(self):
+        self.engine = create_engine(
+            "sqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        Base.metadata.create_all(bind=self.engine)
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        self.db = self.SessionLocal()
+
+    def tearDown(self):
+        self.db.close()
+        self.engine.dispose()
+
+    def _update(self, text: str, chat_id: int = 555) -> dict:
+        return {"message": {"chat": {"id": chat_id}, "text": text}}
+
+    def _create_session_with_token(self) -> Session:
+        session = Session(
+            id=str(uuid.uuid4()),
+            relationship_stage=RelationshipStage.newly_meeting,
+            status=SessionStatus.awaiting_user_b,
+        )
+        user_a = Participant(
+            session_id=session.id,
+            role=ParticipantRole.user_a,
+            name="Akbarali",
+            gender=Gender.male,
+            completed_at=datetime.utcnow(),
+            telegram_chat_id=1001,
+        )
+        self.db.add(session)
+        self.db.add(user_a)
+        self.db.flush()
+        ensure_invite_token(self.db, session)
+        self.db.commit()
+        self.db.refresh(session)
+        return session
+
+    def test_plain_start_sends_main_menu(self):
+        with patch("app.bot.handlers.telegram_client") as mock_client:
+            mock_client.send_message = AsyncMock(return_value=True)
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                handle_update(self._update("/start"), self.db)
+            )
+            mock_client.send_message.assert_called_once()
+            args, kwargs = mock_client.send_message.call_args
+            self.assertEqual(args[0], 555)
+            self.assertEqual(args[1], telegram_welcome())
+            self.assertEqual(kwargs.get("button_text"), "❤️ Munosabat testini boshlash")
+            self.assertIn("/start", kwargs.get("web_app_url", ""))
+            self.assertNotEqual(args[1], invite_invalid())
+
+    def test_start_at_bot_username_sends_main_menu(self):
+        with patch("app.bot.handlers.telegram_client") as mock_client:
+            mock_client.send_message = AsyncMock(return_value=True)
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                handle_update(self._update("/start@qadam_loyihaBot"), self.db)
+            )
+            args, _kwargs = mock_client.send_message.call_args
+            self.assertEqual(args[1], telegram_welcome())
+
+    def test_start_rel_invite_valid_partner_flow(self):
+        session = self._create_session_with_token()
+        with patch("app.bot.handlers.telegram_client") as mock_client:
+            mock_client.send_message = AsyncMock(return_value=True)
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                handle_update(
+                    self._update(f"/start rel_invite_{session.invite_token}", chat_id=2002),
+                    self.db,
+                )
+            )
+            args, kwargs = mock_client.send_message.call_args
+            self.assertEqual(args[1], invite_partner_welcome())
+            self.assertIn(session.id, kwargs.get("web_app_url", ""))
+            partner = (
+                self.db.query(Participant)
+                .filter_by(session_id=session.id, role=ParticipantRole.user_b)
+                .one()
+            )
+            self.assertEqual(partner.telegram_chat_id, 2002)
+
+    def test_start_rel_invite_invalid_shows_expired(self):
+        with patch("app.bot.handlers.telegram_client") as mock_client:
+            mock_client.send_message = AsyncMock(return_value=True)
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                handle_update(self._update("/start rel_invite_not_in_db"), self.db)
+            )
+            args, _kwargs = mock_client.send_message.call_args
+            self.assertEqual(args[1], invite_invalid())
+
+    def test_start_unknown_payload_shows_main_menu(self):
+        with patch("app.bot.handlers.telegram_client") as mock_client:
+            mock_client.send_message = AsyncMock(return_value=True)
+            import asyncio
+
+            asyncio.get_event_loop().run_until_complete(
+                handle_update(self._update("/start foo_bar_baz"), self.db)
+            )
+            args, _kwargs = mock_client.send_message.call_args
+            self.assertEqual(args[1], telegram_welcome())
+            self.assertNotEqual(args[1], invite_invalid())
 
 
 class WebAppFlowIntegrationTests(unittest.TestCase):
