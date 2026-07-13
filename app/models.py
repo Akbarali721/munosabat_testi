@@ -2,10 +2,31 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+def _str_enum(enum_cls: type[enum.Enum]):
+    """Store enum values as VARCHAR on SQLite and PostgreSQL (no native PG ENUM)."""
+    return Enum(
+        enum_cls,
+        values_callable=lambda items: [item.value for item in items],
+        native_enum=False,
+        length=64,
+    )
 
 
 class RelationshipStage(str, enum.Enum):
@@ -54,9 +75,9 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    relationship_stage: Mapped[RelationshipStage] = mapped_column(Enum(RelationshipStage))
+    relationship_stage: Mapped[RelationshipStage] = mapped_column(_str_enum(RelationshipStage))
     status: Mapped[SessionStatus] = mapped_column(
-        Enum(SessionStatus), default=SessionStatus.awaiting_user_b
+        _str_enum(SessionStatus), default=SessionStatus.awaiting_user_b
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_premium_unlocked: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -80,11 +101,11 @@ class Participant(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"))
-    role: Mapped[ParticipantRole] = mapped_column(Enum(ParticipantRole))
+    role: Mapped[ParticipantRole] = mapped_column(_str_enum(ParticipantRole))
     name: Mapped[str] = mapped_column(String(100))
-    gender: Mapped[Gender] = mapped_column(Enum(Gender))
+    gender: Mapped[Gender] = mapped_column(_str_enum(Gender))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    telegram_chat_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    telegram_chat_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     birthday: Mapped[date | None] = mapped_column(Date, nullable=True)
     result_notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -101,8 +122,8 @@ class ScenarioQuestion(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario_id: Mapped[str] = mapped_column(String(64), index=True)
-    stage: Mapped[RelationshipStage] = mapped_column(Enum(RelationshipStage))
-    gender: Mapped[Gender] = mapped_column(Enum(Gender))
+    stage: Mapped[RelationshipStage] = mapped_column(_str_enum(RelationshipStage))
+    gender: Mapped[Gender] = mapped_column(_str_enum(Gender))
     dimension: Mapped[str] = mapped_column(String(64))
     text: Mapped[str] = mapped_column(Text)
     options_json: Mapped[str] = mapped_column(Text)
@@ -143,8 +164,10 @@ class Reminder(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"))
-    participant_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("participants.id"), nullable=True)
-    kind: Mapped[ReminderKind] = mapped_column(Enum(ReminderKind))
+    participant_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("participants.id"), nullable=True
+    )
+    kind: Mapped[ReminderKind] = mapped_column(_str_enum(ReminderKind))
     scheduled_for: Mapped[datetime] = mapped_column(DateTime)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     payload_json: Mapped[str] = mapped_column(Text, default="{}")
@@ -159,8 +182,10 @@ class PaymentOrder(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"))
     amount_uzs: Mapped[int] = mapped_column(Integer)
-    status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), default=PaymentStatus.pending)
-    provider: Mapped[PaymentProvider] = mapped_column(Enum(PaymentProvider))
+    status: Mapped[PaymentStatus] = mapped_column(
+        _str_enum(PaymentStatus), default=PaymentStatus.pending
+    )
+    provider: Mapped[PaymentProvider] = mapped_column(_str_enum(PaymentProvider))
     external_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

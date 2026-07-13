@@ -5,18 +5,16 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from app.database import Base, engine, get_db
+from app.database import ensure_schema, get_db
 from app.routers import challenge, cron, pages, payment, telegram
 from app.services import seed_scenarios
-from app.services.migrate import migrate_db
 
 BASE_DIR = Path(__file__).resolve().parent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    migrate_db()
+    ensure_schema()
     db = next(get_db())
     try:
         seed_scenarios(db)

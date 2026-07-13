@@ -1,8 +1,10 @@
-"""Local dev: poll Telegram updates when webhook is not configured.
+"""Local / Railway bot worker: poll Telegram updates.
 
 Usage:
     set TELEGRAM_BOT_TOKEN=...
     python -m app.bot.poll
+
+Web and Bot must share the same DATABASE_URL (Railway PostgreSQL).
 """
 
 import asyncio
@@ -12,7 +14,7 @@ import httpx
 
 from app.bot.handlers import handle_update
 from app.config import get_settings
-from app.database import SessionLocal
+from app.database import SessionLocal, ensure_schema
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,6 +24,8 @@ async def poll() -> None:
     settings = get_settings()
     if not settings.telegram_bot_token:
         raise SystemExit("TELEGRAM_BOT_TOKEN o'rnatilmagan")
+
+    ensure_schema()
 
     base = f"https://api.telegram.org/bot{settings.telegram_bot_token}"
     offset = 0
