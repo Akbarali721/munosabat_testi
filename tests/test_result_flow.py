@@ -458,12 +458,15 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         self.db.commit()
         with patch("app.routers.pages.get_settings") as mock_settings:
             settings = mock_settings.return_value
+            settings.telegram_bot_username = "bot"
             settings.bot_link_url.side_effect = (
                 lambda payload: f"https://t.me/bot?start={payload}"
             )
             response = self.client.get(f"/invite/{session.id}", follow_redirects=False)
         self.assertEqual(response.status_code, 200)
         self.assertIn("Birinchi qadam tugadi", response.text)
+        self.assertIn("Telegram orqali yuborish", response.text)
+        self.assertIn("Javoblaringiz saqlandi", response.text)
 
     def test_scoring_unchanged_by_experience_layer(self):
         session = self._create_complete_session(weight_a=4, weight_b=1)

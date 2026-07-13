@@ -10,49 +10,40 @@
         <span class="qd-invite__emoji" aria-hidden="true">🎉</span>
         <h1 class="qd-invite__title">Birinchi qadam tugadi</h1>
         <p class="qd-invite__subtitle">
-            Endi testni tanishayotgan insoningizga yuboring.
-            U ham javob bergach, natija Telegram orqali ikkalangizga yuboriladi.
+            Javoblaringiz saqlandi. Endi testni tanishayotgan insoningizga yuboring.
         </p>
 
-        <div class="qd-progress-steps">
-            <div class="qd-progress-step qd-progress-step--done">
-                <span class="qd-progress-step__icon">✔</span>
-                <span>Siz</span>
+        <div class="qd-progress-steps" role="list">
+            <div class="qd-progress-step qd-progress-step--done" role="listitem">
+                <span class="qd-progress-step__icon" aria-hidden="true">✅</span>
+                <span>Siz — testni tugatdingiz</span>
             </div>
-            <div class="qd-progress-step qd-progress-step--wait">
-                <span class="qd-progress-step__icon">⏳</span>
-                <span>Sherigingiz</span>
+            <div class="qd-progress-step qd-progress-step--wait" role="listitem">
+                <span class="qd-progress-step__icon" aria-hidden="true">⏳</span>
+                <span>Sherigingiz — javobini kutyapmiz</span>
             </div>
         </div>
 
         {% if invite_deep_link %}
-        <div class="qd-card qd-card--invite qd-animate-in qd-animate-in--delay">
-            <label class="qd-label" for="invite-url">Telegram taklif havolasi</label>
-            <input type="text" id="invite-url" class="qd-input qd-input--readonly" value="{{ invite_deep_link }}" readonly>
-            <div class="qd-invite-actions">
-                <button type="button" class="qd-btn qd-btn--primary" id="copy-btn">Nusxalash</button>
-                <a
-                    class="qd-btn qd-btn--telegram"
-                    id="telegram-share"
-                    href="https://t.me/share/url?url={{ invite_deep_link | urlencode }}&text={{ 'Salom! Men Qadam orqali munosabat tahlilini boshladim. Shu havola orqali botga kirib, sen ham javob ber — natija ikkalamizga Telegramda keladi 💛' | urlencode }}"
-                    target="_blank"
-                    rel="noopener"
-                >
-                    📩 Telegram orqali yuborish
-                </a>
-            </div>
-        </div>
+        <a
+            class="qd-btn qd-btn--telegram qd-btn--full qd-invite-share"
+            href="https://t.me/share/url?url={{ invite_deep_link | urlencode }}&amp;text={{ invite_share_text | urlencode }}"
+            target="_blank"
+            rel="noopener"
+        >
+            📩 Telegram orqali yuborish
+        </a>
         {% else %}
-        <p class="qd-meta">Telegram bot sozlanmagan — TELEGRAM_BOT_USERNAME ni tekshiring.</p>
+        <p class="qd-meta qd-invite__notice">
+            Ulashish havolasini tayyorlab bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.
+        </p>
         {% endif %}
 
-        <p class="qd-meta">Havola faqat siz ikkalangiz uchun. Natija WebApp ichida darrov ochilmaydi.</p>
+        <p class="qd-meta qd-invite__footer">
+            Sherigingiz testni tugatgach, natija Telegram orqali ikkalangizga ham yuboriladi.
+        </p>
     </section>
 </div>
 {% endblock %}
 
 {% block footer %}{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', path='invite.js') }}"></script>
-{% endblock %}

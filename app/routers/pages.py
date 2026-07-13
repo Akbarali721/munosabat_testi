@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -8,6 +9,13 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.bot.handlers import PENDING_PARTNER_NAME
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+INVITE_SHARE_TEXT = (
+    "Men munosabatlarimizni yaxshiroq tushunish uchun ushbu savollarga javob berdim. "
+    "Endi sizning navbatingiz 😊"
+)
 from app.models import (
     Answer,
     Gender,
@@ -365,13 +373,27 @@ def invite_page(
     token = ensure_invite_token(db, session)
     db.commit()
 
-    user_b = _participant_by_role(session, ParticipantRole.user_b)
-    if user_b and user_b.completed_at and session.status == SessionStatus.complete:
-        # Don't open result without Telegram — show invite with note or waiting
-        pass
-
     settings = get_settings()
-    invite_deep_link = settings.bot_link_url(f"rel_invite_{token}") or ""
+    invite_deep_link = ""
+    if not token:
+        logger.error(
+            "invite_page: empty invite_token; cannot build share link session_id=%s",
+            session_id,
+        )
+    elif not (settings.telegram_bot_username or "").strip():
+        logger.error(
+            "invite_page: TELEGRAM_BOT_USERNAME missing; cannot build share link "
+            "session_id=%s",
+            session_id,
+        )
+    else:
+        invite_deep_link = settings.bot_link_url(f"rel_invite_{token}") or ""
+        if not invite_deep_link:
+            logger.error(
+                "invite_page: bot_link_url returned empty session_id=%s username=%r",
+                session_id,
+                settings.telegram_bot_username,
+            )
 
     return _render(
         request,
@@ -380,7 +402,7 @@ def invite_page(
             "title": "Sherikka yuborish",
             "session": session,
             "invite_deep_link": invite_deep_link,
-            "invite_token": token,
+            "invite_share_text": INVITE_SHARE_TEXT,
             "telegram_linked": bool(user_a.telegram_chat_id),
         },
     )

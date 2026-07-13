@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.bot.handlers import PENDING_PARTNER_NAME, _handle_rel_invite
+from app.config import Settings
 from app.database import Base, get_db
 from app.main import app
 from app.models import (
@@ -79,6 +80,21 @@ class TelegramAuthUnitTests(unittest.TestCase):
         b = generate_invite_token()
         self.assertNotEqual(a, b)
         self.assertGreaterEqual(len(a), 20)
+
+    def test_bot_link_url_strips_at_prefix(self):
+        settings = Settings.__new__(Settings)
+        settings.telegram_bot_username = "@MyQadamBot"
+        url = settings.bot_link_url("rel_invite_abc")
+        self.assertEqual(url, "https://t.me/MyQadamBot?start=rel_invite_abc")
+
+    def test_bot_link_url_none_without_username(self):
+        settings = Settings.__new__(Settings)
+        settings.telegram_bot_username = None
+        self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
+        settings.telegram_bot_username = "   "
+        self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
+        settings.telegram_bot_username = "@"
+        self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
 
 
 class WebAppFlowIntegrationTests(unittest.TestCase):
@@ -259,16 +275,52 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
         session = self._create_initiator_done()
         with patch("app.routers.pages.get_settings") as mock_settings:
             settings = mock_settings.return_value
+            settings.telegram_bot_username = "testbot"
             settings.bot_link_url.side_effect = (
                 lambda payload: f"https://t.me/testbot?start={payload}"
             )
-            settings.telegram_bot_username = "testbot"
             resp = self.client.get(f"/invite/{session.id}")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("Birinchi qadam tugadi", resp.text)
+        self.assertIn("Javoblaringiz saqlandi", resp.text)
+        self.assertIn("Siz — testni tugatdingiz", resp.text)
+        self.assertIn("Sherigingiz — javobini kutyapmiz", resp.text)
+        self.assertIn("Telegram orqali yuborish", resp.text)
+        self.assertIn("t.me/share/url", resp.text)
+        self.assertNotIn("TELEGRAM_BOT_USERNAME", resp.text)
+        self.assertNotIn("Havola faqat siz ikkalangiz uchun", resp.text)
+        self.assertNotIn("WebApp", resp.text)
         self.db.refresh(session)
         self.assertTrue(session.invite_token)
         self.assertIn(session.invite_token, resp.text)
+        self.assertIn("rel_invite_", resp.text)
+
+    def test_invite_page_friendly_error_without_bot_username(self):
+        session = self._create_initiator_done()
+        with patch("app.routers.pages.get_settings") as mock_settings:
+            settings = mock_settings.return_value
+            settings.telegram_bot_username = None
+            settings.bot_link_url.return_value = None
+            with self.assertLogs("app.routers.pages", level="ERROR") as logs:
+                resp = self.client.get(f"/invite/{session.id}")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Ulashish havolasini tayyorlab bo‘lmadi", resp.text)
+        self.assertNotIn("TELEGRAM_BOT_USERNAME", resp.text)
+        self.assertNotIn("Telegram orqali yuborish", resp.text)
+        self.assertTrue(any("TELEGRAM_BOT_USERNAME missing" in line for line in logs.output))
+
+    def test_invite_redirects_if_user_a_incomplete(self):
+        session = self._create_initiator_done()
+        user_a = (
+            self.db.query(Participant)
+            .filter_by(session_id=session.id, role=ParticipantRole.user_a)
+            .one()
+        )
+        user_a.completed_at = None
+        self.db.commit()
+        resp = self.client.get(f"/invite/{session.id}", follow_redirects=False)
+        self.assertEqual(resp.status_code, 303)
+        self.assertIn("/questions", resp.headers.get("location", ""))
 
     def test_rel_invite_self_block(self):
         session = self._create_initiator_done(telegram_id=1001)

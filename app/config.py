@@ -34,7 +34,10 @@ class Settings:
         return self.payment_mode != "payme" or not self.payme_configured
 
     def bot_link_url(self, start_payload: str) -> str | None:
-        if not self.telegram_bot_username:
+        raw = (self.telegram_bot_username or "").strip()
+        if not raw:
             return None
-        username = self.telegram_bot_username.lstrip("@")
+        username = raw.lstrip("@").strip()
+        if not username:
+            return None
         return f"https://t.me/{username}?start={start_payload}"
