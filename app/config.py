@@ -1,5 +1,19 @@
+import logging
 import os
 from functools import lru_cache
+from pathlib import Path
+
+import httpx
+from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
+
+# Project root .env (local). Railway injects env vars into the process — load_dotenv is a no-op there.
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(_ENV_FILE)
+
+_UNSET = object()
+_resolved_username_cache: str | None | object = _UNSET
 
 
 @lru_cache
@@ -33,11 +47,57 @@ class Settings:
     def payment_demo(self) -> bool:
         return self.payment_mode != "payme" or not self.payme_configured
 
-    def bot_link_url(self, start_payload: str) -> str | None:
-        raw = (self.telegram_bot_username or "").strip()
-        if not raw:
+    @staticmethod
+    def normalize_bot_username(value: str | None) -> str | None:
+        if not value:
             return None
-        username = raw.lstrip("@").strip()
+        username = value.strip().lstrip("@").strip()
+        return username or None
+
+    def resolve_bot_username(self) -> str | None:
+        """Env TELEGRAM_BOT_USERNAME, else Telegram getMe (token required)."""
+        global _resolved_username_cache
+
+        from_env = self.normalize_bot_username(self.telegram_bot_username)
+        if from_env:
+            return from_env
+
+        if _resolved_username_cache is not _UNSET:
+            return _resolved_username_cache  # type: ignore[return-value]
+
+        username = self._fetch_username_via_get_me()
+        _resolved_username_cache = username
+        return username
+
+    def _fetch_username_via_get_me(self) -> str | None:
+        token = (self.telegram_bot_token or "").strip()
+        if not token:
+            return None
+        try:
+            response = httpx.get(
+                f"https://api.telegram.org/bot{token}/getMe",
+                timeout=10.0,
+            )
+            payload = response.json()
+            if not payload.get("ok"):
+                logger.error(
+                    "Telegram getMe failed: status=%s body=%s",
+                    response.status_code,
+                    payload,
+                )
+                return None
+            username = self.normalize_bot_username(
+                (payload.get("result") or {}).get("username")
+            )
+            if not username:
+                logger.error("Telegram getMe ok but username missing in result")
+            return username
+        except Exception:
+            logger.exception("Telegram getMe request failed while resolving bot username")
+            return None
+
+    def bot_link_url(self, start_payload: str) -> str | None:
+        username = self.resolve_bot_username()
         if not username:
             return None
         return f"https://t.me/{username}?start={start_payload}"

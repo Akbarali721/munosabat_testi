@@ -84,12 +84,14 @@ class TelegramAuthUnitTests(unittest.TestCase):
     def test_bot_link_url_strips_at_prefix(self):
         settings = Settings.__new__(Settings)
         settings.telegram_bot_username = "@MyQadamBot"
+        settings.telegram_bot_token = None
         url = settings.bot_link_url("rel_invite_abc")
         self.assertEqual(url, "https://t.me/MyQadamBot?start=rel_invite_abc")
 
     def test_bot_link_url_none_without_username(self):
         settings = Settings.__new__(Settings)
         settings.telegram_bot_username = None
+        settings.telegram_bot_token = None
         self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
         settings.telegram_bot_username = "   "
         self.assertIsNone(settings.bot_link_url("rel_invite_abc"))
@@ -276,9 +278,8 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
         with patch("app.routers.pages.get_settings") as mock_settings:
             settings = mock_settings.return_value
             settings.telegram_bot_username = "testbot"
-            settings.bot_link_url.side_effect = (
-                lambda payload: f"https://t.me/testbot?start={payload}"
-            )
+            settings.telegram_bot_token = "token"
+            settings.resolve_bot_username.return_value = "testbot"
             resp = self.client.get(f"/invite/{session.id}")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("Birinchi qadam tugadi", resp.text)
@@ -294,20 +295,22 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
         self.assertTrue(session.invite_token)
         self.assertIn(session.invite_token, resp.text)
         self.assertIn("rel_invite_", resp.text)
+        self.assertIn("t.me%2Ftestbot%3Fstart%3Drel_invite_", resp.text)
 
     def test_invite_page_friendly_error_without_bot_username(self):
         session = self._create_initiator_done()
         with patch("app.routers.pages.get_settings") as mock_settings:
             settings = mock_settings.return_value
             settings.telegram_bot_username = None
-            settings.bot_link_url.return_value = None
+            settings.telegram_bot_token = None
+            settings.resolve_bot_username.return_value = None
             with self.assertLogs("app.routers.pages", level="ERROR") as logs:
                 resp = self.client.get(f"/invite/{session.id}")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("Ulashish havolasini tayyorlab bo‘lmadi", resp.text)
         self.assertNotIn("TELEGRAM_BOT_USERNAME", resp.text)
         self.assertNotIn("Telegram orqali yuborish", resp.text)
-        self.assertTrue(any("TELEGRAM_BOT_USERNAME missing" in line for line in logs.output))
+        self.assertTrue(any("bot username unavailable" in line for line in logs.output))
 
     def test_invite_redirects_if_user_a_incomplete(self):
         session = self._create_initiator_done()

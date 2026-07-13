@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -372,27 +373,36 @@ def invite_page(
 
     token = ensure_invite_token(db, session)
     db.commit()
+    db.refresh(session)
 
     settings = get_settings()
     invite_deep_link = ""
+    telegram_share_url = ""
+
     if not token:
         logger.error(
-            "invite_page: empty invite_token; cannot build share link session_id=%s",
-            session_id,
-        )
-    elif not (settings.telegram_bot_username or "").strip():
-        logger.error(
-            "invite_page: TELEGRAM_BOT_USERNAME missing; cannot build share link "
+            "invite_page: empty invite_token after ensure; cannot build share link "
             "session_id=%s",
             session_id,
         )
     else:
-        invite_deep_link = settings.bot_link_url(f"rel_invite_{token}") or ""
-        if not invite_deep_link:
+        username = settings.resolve_bot_username()
+        if not username:
             logger.error(
-                "invite_page: bot_link_url returned empty session_id=%s username=%r",
+                "invite_page: bot username unavailable "
+                "(TELEGRAM_BOT_USERNAME empty and getMe fallback failed); "
+                "session_id=%s has_bot_token=%s invite_token_len=%s",
                 session_id,
-                settings.telegram_bot_username,
+                bool(settings.telegram_bot_token),
+                len(token),
+            )
+        else:
+            # Token is opaque (urlsafe); do not treat hyphens as UUID segments.
+            invite_deep_link = f"https://t.me/{username}?start=rel_invite_{token}"
+            telegram_share_url = (
+                "https://t.me/share/url"
+                f"?url={quote(invite_deep_link, safe='')}"
+                f"&text={quote(INVITE_SHARE_TEXT, safe='')}"
             )
 
     return _render(
@@ -402,6 +412,7 @@ def invite_page(
             "title": "Sherikka yuborish",
             "session": session,
             "invite_deep_link": invite_deep_link,
+            "telegram_share_url": telegram_share_url,
             "invite_share_text": INVITE_SHARE_TEXT,
             "telegram_linked": bool(user_a.telegram_chat_id),
         },

@@ -24,10 +24,10 @@
             </div>
         </div>
 
-        {% if invite_deep_link %}
+        {% if telegram_share_url %}
         <a
             class="qd-btn qd-btn--telegram qd-btn--full qd-invite-share"
-            href="https://t.me/share/url?url={{ invite_deep_link | urlencode }}&amp;text={{ invite_share_text | urlencode }}"
+            href="{{ telegram_share_url }}"
             target="_blank"
             rel="noopener"
         >
