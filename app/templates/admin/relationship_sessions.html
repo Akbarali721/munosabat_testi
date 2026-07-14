@@ -1,0 +1,102 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }} — Qadam Admin{% endblock %}
+{% block content %}
+<h1 class="admin-h1">Munosabat sessiyalari</h1>
+<p class="admin-muted">
+    User2 faqat deep-link ochilganda aniqlanadi. Share paytida “kimga yuborildi” noma’lum.
+</p>
+
+<section class="admin-stats">
+    <article><strong>{{ stats.created_today }}</strong><span>Bugun yaratilgan</span></article>
+    <article><strong>{{ stats.initiator_done }}</strong><span>User1 tugatgan</span></article>
+    <article><strong>{{ stats.share_ready }}</strong><span>Share bosqichiga yetgan</span></article>
+    <article><strong>{{ stats.partner_opened }}</strong><span>Partner link ochgan</span></article>
+    <article><strong>{{ stats.partner_done }}</strong><span>Partner tugatgan</span></article>
+    <article><strong>{{ stats.completed }}</strong><span>To‘liq tugallangan</span></article>
+    <article><strong>{{ stats.premium }}</strong><span>Premium</span></article>
+</section>
+
+<section class="admin-conv">
+    <span>Open: <b>{{ stats.conv_open }}%</b></span>
+    <span>Partner complete: <b>{{ stats.conv_partner_complete }}%</b></span>
+    <span>Full complete: <b>{{ stats.conv_full }}%</b></span>
+</section>
+
+<form class="admin-filters" method="get" action="/admin/relationship-sessions">
+    <div class="admin-quick">
+        <a class="admin-chip {% if filters.quick=='today' %}is-on{% endif %}" href="?quick=today">Bugun</a>
+        <a class="admin-chip {% if filters.quick=='7d' %}is-on{% endif %}" href="?quick=7d">Oxirgi 7 kun</a>
+        <a class="admin-chip {% if filters.quick=='waiting' %}is-on{% endif %}" href="?quick=waiting">Sherik kutilyapti</a>
+        <a class="admin-chip {% if filters.quick=='in_progress' %}is-on{% endif %}" href="?quick=in_progress">Jarayonda</a>
+        <a class="admin-chip {% if filters.quick=='completed' %}is-on{% endif %}" href="?quick=completed">Tugallangan</a>
+        <a class="admin-chip {% if filters.quick=='problems' %}is-on{% endif %}" href="?quick=problems">Muammoli</a>
+    </div>
+    <div class="admin-filter-grid">
+        <label>Status
+            <select name="status">
+                <option value="">Barchasi</option>
+                {% for key, label in status_labels.items() %}
+                <option value="{{ key }}" {% if filters.status==key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Qidiruv
+            <input type="text" name="q" value="{{ filters.q }}" placeholder="ism, @username, session, token">
+        </label>
+        <label>Dan
+            <input type="date" name="date_from" value="{{ filters.date_from }}">
+        </label>
+        <label>Gacha
+            <input type="date" name="date_to" value="{{ filters.date_to }}">
+        </label>
+        <label>User1 TG ID
+            <input type="text" name="initiator_tg" value="{{ filters.initiator_tg }}">
+        </label>
+        <label>User2 TG ID
+            <input type="text" name="partner_tg" value="{{ filters.partner_tg }}">
+        </label>
+        <label class="admin-check">
+            <input type="checkbox" name="problems" value="1" {% if filters.problems=='1' %}checked{% endif %}>
+            Faqat muammoli
+        </label>
+    </div>
+    <button type="submit" class="admin-btn">Filtrlash</button>
+</form>
+
+<div class="admin-table-wrap">
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Session</th>
+            <th>Juftlik</th>
+            <th>User1 TG</th>
+            <th>Token</th>
+            <th>Ulashish</th>
+            <th>User2 holati</th>
+            <th>Status</th>
+            <th>Yaratilgan</th>
+            <th>Natija</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr class="{% if row.is_problem %}is-problem{% endif %}">
+            <td class="mono">{{ row.session.id[:8] }}…</td>
+            <td>{{ row.pair_label }}</td>
+            <td class="mono">{{ row.session.initiator_telegram_id or '—' }}</td>
+            <td class="mono">{{ row.token_masked }}</td>
+            <td>{{ row.share_state }}</td>
+            <td>{{ row.user2_state }}</td>
+            <td><span class="admin-badge admin-badge--{{ row.admin_status }}">{{ row.status_label }}</span></td>
+            <td>{{ row.session.created_at.strftime('%d.%m.%Y %H:%M') if row.session.created_at else '—' }}</td>
+            <td>{% if row.session.status.value == 'complete' %}Tayyor{% else %}Tayyor emas{% endif %}</td>
+            <td><a href="/admin/relationship-sessions/{{ row.session.id }}">Batafsil</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10">Sessiya topilmadi.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

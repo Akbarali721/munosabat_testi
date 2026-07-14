@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import secrets
+from datetime import datetime
 
 from sqlalchemy.orm import Session as DbSession
 
@@ -14,8 +15,8 @@ def generate_invite_token() -> str:
 
 
 def ensure_invite_token(db: DbSession, session: Session, *, max_attempts: int = 8) -> str:
-    """Assign a unique invite_token if missing; retry on rare collisions."""
-    if session.invite_token:
+    """Assign a unique invite_token if missing or revoked; retry on rare collisions."""
+    if session.invite_token and not getattr(session, "invite_revoked_at", None):
         return session.invite_token
 
     for _ in range(max_attempts):
@@ -28,13 +29,23 @@ def ensure_invite_token(db: DbSession, session: Session, *, max_attempts: int = 
         if taken:
             continue
         session.invite_token = token
+        session.invite_token_created_at = datetime.utcnow()
+        session.invite_revoked_at = None
+        session.invite_token_used_at = None
         db.flush()
         return token
 
     raise RuntimeError("invite_token yaratib bo‘lmadi")
 
 
+def revoke_invite_token(session: Session) -> None:
+    session.invite_revoked_at = datetime.utcnow()
+
+
 def get_session_by_invite_token(db: DbSession, token: str) -> Session | None:
     if not token:
         return None
-    return db.query(Session).filter(Session.invite_token == token).first()
+    session = db.query(Session).filter(Session.invite_token == token).first()
+    if not session or getattr(session, "invite_revoked_at", None):
+        return None
+    return session

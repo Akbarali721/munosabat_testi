@@ -34,6 +34,9 @@ class Settings:
         self.payme_merchant_id: str | None = os.getenv("PAYME_MERCHANT_ID") or None
         self.payme_secret_key: str | None = os.getenv("PAYME_SECRET_KEY") or None
         self.cron_secret: str | None = os.getenv("CRON_SECRET") or None
+        self.admin_secret: str | None = (
+            os.getenv("ADMIN_SECRET") or os.getenv("CRON_SECRET") or None
+        )
 
     @property
     def telegram_enabled(self) -> bool:

@@ -51,6 +51,22 @@ class TelegramClient:
             response = await client.post(f"{self._base}/sendMessage", json=payload)
             return response.is_success
 
+    async def get_chat(self, chat_id: int) -> dict[str, Any] | None:
+        if not self._base:
+            return None
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"{self._base}/getChat",
+                params={"chat_id": chat_id},
+            )
+            if not response.is_success:
+                return None
+            data = response.json()
+            if not data.get("ok"):
+                return None
+            result = data.get("result")
+            return result if isinstance(result, dict) else None
+
     def web_app_inline_keyboard(self, button_text: str, web_app_url: str) -> dict[str, Any]:
         return {
             "inline_keyboard": [

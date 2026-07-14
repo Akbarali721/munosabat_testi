@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }} — Qadam Admin{% endblock %}
+{% block content %}
+{% set s = detail.session %}
+{% set row = detail.row %}
+{% set a = detail.user_a %}
+{% set b = detail.user_b %}
+
+<p><a href="/admin/relationship-sessions">← Ro‘yxat</a></p>
+<h1 class="admin-h1">Sessiya</h1>
+<p class="mono">{{ s.id }}</p>
+
+{% if flash_ok %}<p class="admin-alert admin-alert--ok">{{ flash_ok }}</p>{% endif %}
+{% if flash_err %}<p class="admin-alert admin-alert--err">{{ flash_err }}</p>{% endif %}
+
+{% if row.is_problem %}
+<section class="admin-alert admin-alert--err">
+    <strong>Muammoli sessiya</strong>
+    <ul>
+        {% for p in row.problems %}
+        <li>{{ p.label }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<p>
+    <span class="admin-badge admin-badge--{{ row.admin_status }}">{{ row.status_label }}</span>
+    · {{ row.pair_label }}
+</p>
+
+<div class="admin-grid-2">
+    <section class="admin-card">
+        <h2>User1</h2>
+        <dl class="admin-dl">
+            <dt>Ismi</dt><dd>{{ a.name if a else '—' }}</dd>
+            <dt>Telegram ID</dt><dd class="mono">{{ s.initiator_telegram_id or (a.telegram_chat_id if a else '—') }}</dd>
+            <dt>Username</dt><dd>{{ ('@' + a.telegram_username) if a and a.telegram_username else 'Username mavjud emas' }}</dd>
+            <dt>Jinsi</dt><dd>{{ a.gender.value if a else '—' }}</dd>
+            <dt>Tug‘ilgan kun</dt><dd>{{ a.birthday if a and a.birthday else '—' }}</dd>
+            <dt>Munosabat</dt><dd>{{ s.relationship_stage.value }}</dd>
+            <dt>Boshlagan</dt><dd>{{ s.created_at.strftime('%d.%m.%Y %H:%M') if s.created_at else '—' }}</dd>
+            <dt>Tugatgan</dt><dd>{{ a.completed_at.strftime('%d.%m.%Y %H:%M') if a and a.completed_at else '—' }}</dd>
+            <dt>Javoblar</dt><dd>{{ detail.answers_a }}</dd>
+        </dl>
+    </section>
+
+    <section class="admin-card">
+        <h2>User2</h2>
+        {% if s.partner_telegram_id or (b and b.telegram_chat_id) %}
+        <dl class="admin-dl">
+            <dt>Ismi</dt><dd>{% if b and b.name != '__pending__' %}{{ b.name }}{% else %}Hali profil to‘ldirilmagan{% endif %}</dd>
+            <dt>Telegram ID</dt><dd class="mono">{{ s.partner_telegram_id or (b.telegram_chat_id if b else '—') }}</dd>
+            <dt>Username</dt><dd>{{ ('@' + b.telegram_username) if b and b.telegram_username else 'Username mavjud emas' }}</dd>
+            <dt>Jinsi</dt><dd>{{ b.gender.value if b and b.name != '__pending__' else '—' }}</dd>
+            <dt>Tug‘ilgan kun</dt><dd>{{ b.birthday if b and b.birthday else '—' }}</dd>
+            <dt>Deep-link ochgan</dt><dd>{{ s.partner_started_at.strftime('%d.%m.%Y %H:%M') if s.partner_started_at else '—' }}</dd>
+            <dt>Tugatgan</dt><dd>{{ b.completed_at.strftime('%d.%m.%Y %H:%M') if b and b.completed_at else '—' }}</dd>
+            <dt>Javoblar</dt><dd>{{ detail.answers_b }}</dd>
+        </dl>
+        {% else %}
+        <p class="admin-muted">Sherik havolani hali ochmagan — User2 hali noma’lum.</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="admin-card">
+    <h2>Taklif</h2>
+    <dl class="admin-dl">
+        <dt>Token (to‘liq)</dt><dd class="mono">{{ s.invite_token or '—' }}</dd>
+        <dt>Qisqa</dt><dd class="mono">{{ row.token_masked }}</dd>
+        <dt>Deep-link</dt><dd class="mono break">{{ detail.deep_link or '—' }}</dd>
+        <dt>Yaratilgan</dt><dd>{{ s.invite_token_created_at.strftime('%d.%m.%Y %H:%M') if s.invite_token_created_at else '—' }}</dd>
+        <dt>Ishlatilgan</dt><dd>{{ s.invite_token_used_at.strftime('%d.%m.%Y %H:%M') if s.invite_token_used_at else '—' }}</dd>
+        <dt>Holati</dt><dd>{% if s.invite_revoked_at %}Bekor qilingan{% elif s.invite_token %}Faol{% else %}Yo‘q{% endif %}</dd>
+        <dt>Ulashish</dt><dd>{{ row.share_state }}</dd>
+        <dt>Ochgan TG ID</dt><dd class="mono">{{ s.partner_telegram_id or 'Hali ochilmagan' }}</dd>
+    </dl>
+</section>
+
+<section class="admin-card">
+    <h2>Natija</h2>
+    <dl class="admin-dl">
+        <dt>Umumiy natija</dt><dd>{% if detail.result_ready %}Tayyor{% else %}Tayyor emas{% endif %}</dd>
+        <dt>User1 ga yuborilgan</dt><dd>{{ 'Ha' if detail.result_sent_user1 else 'Yo‘q' }}</dd>
+        <dt>User2 ga yuborilgan</dt><dd>{{ 'Ha' if detail.result_sent_user2 else 'Yo‘q' }}</dd>
+        <dt>Premium</dt><dd>{{ 'Ochilgan' if detail.premium_unlocked else 'Yo‘q' }}</dd>
+        <dt>To‘lov</dt><dd>{{ 'Paid' if detail.payment_paid else 'Yo‘q / demo' }}</dd>
+        <dt>PDF</dt><dd>Hozircha mavjud emas</dd>
+    </dl>
+</section>
+
+<section class="admin-card">
+    <h2>Timeline</h2>
+    <ol class="admin-timeline">
+        {% for item in detail.timeline %}
+        <li>
+            <time>{{ item.at.strftime('%d.%m.%Y %H:%M') if item.at else '—' }}</time>
+            — {{ item.label }}
+            {% if item.telegram_id %}<span class="mono">(tg:{{ item.telegram_id }})</span>{% endif %}
+            {% if item.payload %}<span class="admin-muted">{{ item.payload }}</span>{% endif %}
+        </li>
+        {% else %}
+        <li>Eventlar hali yo‘q.</li>
+        {% endfor %}
+    </ol>
+</section>
+
+<section class="admin-card">
+    <h2>Admin amallari</h2>
+    <div class="admin-actions">
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/resend-share" onsubmit="return confirm('Share xabarini qayta yuborilsinmi?');">
+            <button type="submit" class="admin-btn">User1 ga yuborish tugmasini qayta jo‘natish</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/resend-result" onsubmit="return confirm('Natija qayta yuborilsinmi?');">
+            <button type="submit" class="admin-btn">Natijani User1 ga qayta yuborish</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/revoke-token" onsubmit="return confirm('Token bekor qilinsinmi?');">
+            <button type="submit" class="admin-btn admin-btn--danger">Taklif tokenini bekor qilish</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/regenerate-token" onsubmit="return confirm('Yangi token yaratilsinmi?');">
+            <button type="submit" class="admin-btn">Yangi token yaratish</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/cancel" onsubmit="return confirm('Sessiya bekor qilinsinmi?');">
+            <button type="submit" class="admin-btn admin-btn--danger">Sessiyani bekor qilish</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -49,6 +49,7 @@ class SessionStatus(str, enum.Enum):
     awaiting_user_b = "awaiting_user_b"
     awaiting_user_b_answers = "awaiting_user_b_answers"
     complete = "complete"
+    cancelled = "cancelled"
 
 
 class ReminderKind(str, enum.Enum):
@@ -92,11 +93,30 @@ class Session(Base):
     # Permanent session-level Telegram IDs (do not overwrite initiator via partner flow)
     initiator_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     partner_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    partner_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    initiator_share_notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    invite_token_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    invite_token_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    invite_revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     participants: Mapped[list["Participant"]] = relationship(back_populates="session")
     answers: Mapped[list["Answer"]] = relationship(back_populates="session")
     reminders: Mapped[list["Reminder"]] = relationship(back_populates="session")
     payment_orders: Mapped[list["PaymentOrder"]] = relationship(back_populates="session")
+    events: Mapped[list["RelationshipEvent"]] = relationship(back_populates="session")
+
+
+class RelationshipEvent(Base):
+    __tablename__ = "relationship_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), index=True)
+    event_type: Mapped[str] = mapped_column(String(64), index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    payload: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    session: Mapped["Session"] = relationship(back_populates="events")
 
 
 class Participant(Base):
@@ -109,6 +129,7 @@ class Participant(Base):
     gender: Mapped[Gender] = mapped_column(_str_enum(Gender))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     telegram_chat_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     birthday: Mapped[date | None] = mapped_column(Date, nullable=True)
     result_notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

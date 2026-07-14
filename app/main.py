@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.database import ensure_schema, get_db
-from app.routers import challenge, cron, pages, payment, telegram
+from app.routers import admin, challenge, cron, pages, payment, telegram
 from app.services import seed_scenarios
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -42,3 +42,4 @@ app.include_router(challenge.router)
 app.include_router(payment.router)
 app.include_router(cron.router)
 app.include_router(telegram.router)
+app.include_router(admin.router)

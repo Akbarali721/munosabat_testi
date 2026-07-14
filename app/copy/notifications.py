@@ -28,8 +28,17 @@ def telegram_link_invalid() -> str:
 
 def initiator_answers_saved() -> str:
     return (
-        "✅ Javoblaringiz saqlandi.\n"
-        "Ikkinchi ishtirokchi testni tugatgach, natija shu yerga keladi."
+        "Siz testning birinchi qismini yakunladingiz ✅\n\n"
+        "Endi havolani sherigingizga yuboring. "
+        "U ham savollarga javob bergach, sizning umumiy natijangiz tayyor bo‘ladi."
+    )
+
+
+def invite_partner_welcome() -> str:
+    return (
+        "Sizga munosabat testi yuborildi 💌\n\n"
+        "Savollarga javob bering. Ikkalangiz ham testni tugatganingizdan keyin "
+        "umumiy natija tayyorlanadi."
     )
 
 
@@ -51,14 +60,6 @@ def invite_already_taken() -> str:
     return (
         "Bu testga allaqachon boshqa ishtirokchi qo‘shilgan.\n"
         "Yangi juftlik testi uchun yangi havola kerak."
-    )
-
-
-def invite_partner_welcome() -> str:
-    return (
-        "💌 Sizga munosabat testi yuborildi.\n"
-        "Savollarga samimiy javob bering. Natija ikkalangizning "
-        "javoblaringiz asosida tayyorlanadi."
     )
 
 

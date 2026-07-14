@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime
 
 from sqlalchemy.orm import Session as DbSession
 
@@ -21,6 +22,7 @@ from app.copy.notifications import (
     telegram_welcome,
 )
 from app.models import Gender, Participant, ParticipantRole, Session, SessionStatus
+from app.services.events import log_relationship_event
 from app.services.invite_token import get_session_by_invite_token
 from app.services.session_telegram import set_initiator_telegram_id, set_partner_telegram_id
 
@@ -204,16 +206,56 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
         user_b.telegram_chat_id = chat_id
 
     set_partner_telegram_id(session, chat_id)
+    if session.partner_started_at is None:
+        session.partner_started_at = datetime.utcnow()
+    if session.invite_token_used_at is None:
+        session.invite_token_used_at = datetime.utcnow()
 
     if session.status == SessionStatus.awaiting_user_b:
         session.status = SessionStatus.awaiting_user_b_answers
+
+    log_relationship_event(
+        db,
+        session_id=session.id,
+        event_type="partner_deeplink_opened",
+        telegram_id=chat_id,
+    )
+    log_relationship_event(
+        db,
+        session_id=session.id,
+        event_type="partner_attached_to_session",
+        telegram_id=chat_id,
+    )
     db.commit()
+
+    # Best-effort username lookup for admin panel
+    try:
+        get_chat = getattr(telegram_client, "get_chat", None)
+        chat = None
+        if callable(get_chat):
+            maybe = get_chat(chat_id)
+            if hasattr(maybe, "__await__"):
+                chat = await maybe
+            elif isinstance(maybe, dict):
+                chat = maybe
+        if chat and chat.get("username") and user_b:
+            user_b.telegram_username = str(chat["username"])
+            db.commit()
+    except Exception:
+        logger.exception("getChat failed for partner chat_id=%s", chat_id)
 
     await telegram_client.send_message(
         chat_id,
         invite_partner_welcome(),
         button_text="❤️ Testni boshlash",
         web_app_url=_partner_entry_url(session.id),
+    )
+    log_relationship_event(
+        db,
+        session_id=session.id,
+        event_type="partner_test_started",
+        telegram_id=chat_id,
+        commit=True,
     )
 
 

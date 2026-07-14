@@ -456,15 +456,20 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         user_b.completed_at = None
         session.status = SessionStatus.awaiting_user_b_answers
         self.db.commit()
-        with patch("app.routers.pages.get_settings") as mock_settings:
-            settings = mock_settings.return_value
-            settings.telegram_bot_username = "bot"
-            settings.resolve_bot_username.return_value = "bot"
+        with (
+            patch("app.routers.pages.get_settings") as mock_pages_settings,
+            patch("app.services.invite_share.get_settings") as mock_share_settings,
+        ):
+            for mock_settings in (mock_pages_settings, mock_share_settings):
+                settings = mock_settings.return_value
+                settings.telegram_bot_username = "bot"
+                settings.resolve_bot_username.return_value = "bot"
+                settings.webapp_base_url = "https://app.example"
             response = self.client.get(f"/invite/{session.id}", follow_redirects=False)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Birinchi qadam tugadi", response.text)
-        self.assertIn("Telegram orqali yuborish", response.text)
-        self.assertIn("Javoblaringiz saqlandi", response.text)
+        self.assertIn("Birinchi qism tayyor", response.text)
+        self.assertIn("Havolani ulashish", response.text)
+        self.assertIn("Test holatini ko‘rish", response.text)
 
     def test_scoring_unchanged_by_experience_layer(self):
         session = self._create_complete_session(weight_a=4, weight_b=1)

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin — Qadam{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='admin.css') }}">
+</head>
+<body class="admin-body">
+    {% if admin_ok %}
+    <header class="admin-top">
+        <div class="admin-wrap admin-top__inner">
+            <a class="admin-brand" href="/admin/relationship-sessions">Qadam Admin</a>
+            <nav class="admin-nav">
+                <a href="/admin/relationship-sessions">Munosabat sessiyalari</a>
+                <form method="post" action="/admin/logout" class="admin-inline-form">
+                    <button type="submit" class="admin-link-btn">Chiqish</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+    {% endif %}
+    <main class="admin-main">
+        <div class="admin-wrap">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+</html>

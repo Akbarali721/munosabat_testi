@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Taklif — Qadam{% endblock %}
+{% block title %}Birinchi qism tayyor — Qadam{% endblock %}
 
 {% block body_class %}page-invite{% endblock %}
 
 {% block content %}
 <div class="qd-shell">
     <section class="qd-invite qd-animate-in">
-        <span class="qd-invite__emoji" aria-hidden="true">🎉</span>
-        <h1 class="qd-invite__title">Birinchi qadam tugadi</h1>
+        <span class="qd-invite__emoji" aria-hidden="true">✅</span>
+        <h1 class="qd-invite__title">Birinchi qism tayyor</h1>
         <p class="qd-invite__subtitle">
-            Javoblaringiz saqlandi. Endi testni tanishayotgan insoningizga yuboring.
+            Endi sherigingiz ham testni ishlashi kerak. Sizga Telegram bot orqali
+            yuborish tugmasini jo‘natdik.
         </p>
 
         <div class="qd-progress-steps" role="list">
@@ -24,26 +25,64 @@
             </div>
         </div>
 
-        {% if telegram_share_url %}
-        <a
-            class="qd-btn qd-btn--telegram qd-btn--full qd-invite-share"
-            href="{{ telegram_share_url }}"
-            target="_blank"
-            rel="noopener"
-        >
-            📩 Telegram orqali yuborish
-        </a>
-        {% else %}
-        <p class="qd-meta qd-invite__notice">
-            Ulashish havolasini tayyorlab bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.
-        </p>
-        {% endif %}
+        <div class="qd-invite-actions">
+            {% if telegram_share_url %}
+            <a
+                class="qd-btn qd-btn--telegram qd-btn--full qd-invite-share"
+                href="{{ telegram_share_url }}"
+                target="_blank"
+                rel="noopener"
+                id="invite-share-btn"
+            >
+                💌 Havolani ulashish
+            </a>
+            {% else %}
+            <p class="qd-meta qd-invite__notice">
+                Ulashish havolasini tayyorlab bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring
+                yoki Telegram botdagi xabarni tekshiring.
+            </p>
+            {% endif %}
+
+            <a
+                class="qd-btn qd-btn--secondary qd-btn--full"
+                href="/session/{{ session.id }}/status"
+            >
+                ⏳ Test holatini ko‘rish
+            </a>
+
+            <button type="button" class="qd-btn qd-btn--ghost qd-btn--full" id="invite-close-btn">
+                Telegramga qaytish
+            </button>
+        </div>
 
         <p class="qd-meta qd-invite__footer">
-            Sherigingiz testni tugatgach, natija Telegram orqali ikkalangizga ham yuboriladi.
+            Asosiy yuborish tugmasi bot chatida ham bor — «💌 Sherikka yuborish».
+            Sherigingiz testni tugatgach, natija Telegram orqali ikkalangizga yuboriladi.
         </p>
     </section>
 </div>
 {% endblock %}
 
 {% block footer %}{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+    var closeBtn = document.getElementById("invite-close-btn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            if (tg && typeof tg.close === "function") {
+                tg.close();
+            } else {
+                window.location.href = "https://t.me/{{ bot_username or 'qadam_loyihaBot' }}";
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

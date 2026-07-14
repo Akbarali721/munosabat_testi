@@ -23,6 +23,8 @@ def migrate_db() -> None:
     migrate_participant_result_notified_column()
     migrate_session_telegram_id_columns()
     backfill_session_telegram_ids_from_participants()
+    migrate_session_share_tracking_columns()
+    migrate_relationship_events_table()
 
 
 def _is_postgres() -> bool:
@@ -242,6 +244,65 @@ def backfill_session_telegram_ids_from_participants() -> None:
                     {"tid": row["partner_from_participant"], "sid": row["id"]},
                 )
 
+
+
+
+
+
+def migrate_session_share_tracking_columns() -> None:
+    _add_column_if_missing("sessions", "partner_started_at", _timestamp_type())
+    _add_column_if_missing("sessions", "initiator_share_notified_at", _timestamp_type())
+    _add_column_if_missing("sessions", "invite_token_created_at", _timestamp_type())
+    _add_column_if_missing("sessions", "invite_token_used_at", _timestamp_type())
+    _add_column_if_missing("sessions", "invite_revoked_at", _timestamp_type())
+    _add_column_if_missing("participants", "telegram_username", "VARCHAR(64)")
+
+
+def migrate_relationship_events_table() -> None:
+    inspector = inspect(engine)
+    if "relationship_events" in inspector.get_table_names():
+        return
+
+    ts = _timestamp_type()
+    if _is_postgres():
+        ddl = f"""
+            CREATE TABLE relationship_events (
+                id SERIAL PRIMARY KEY,
+                session_id VARCHAR(36) NOT NULL REFERENCES sessions (id),
+                event_type VARCHAR(64) NOT NULL,
+                telegram_id BIGINT,
+                payload TEXT NOT NULL DEFAULT '',
+                created_at {ts} NOT NULL
+            )
+            """
+    else:
+        ddl = f"""
+            CREATE TABLE relationship_events (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                session_id VARCHAR(36) NOT NULL,
+                event_type VARCHAR(64) NOT NULL,
+                telegram_id INTEGER,
+                payload TEXT NOT NULL DEFAULT '',
+                created_at {ts} NOT NULL,
+                FOREIGN KEY(session_id) REFERENCES sessions (id)
+            )
+            """
+
+    with engine.begin() as conn:
+        conn.execute(text(ddl))
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_relationship_events_session_id "
+                "ON relationship_events (session_id)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_relationship_events_event_type "
+                "ON relationship_events (event_type)"
+            )
+        )
+        logger.info("Created table relationship_events")
 
 
 def migrate_payment_orders_table() -> None:

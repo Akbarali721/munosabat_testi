@@ -10,6 +10,9 @@ from app.copy.notifications import (
 )
 from app.database import SessionLocal
 from app.models import Participant, ParticipantRole, Session, SessionStatus
+from app.services.events import log_relationship_event
+from app.services.invite_share import initiator_invite_keyboard
+from app.services.invite_token import ensure_invite_token
 from app.services.session_telegram import (
     resolve_initiator_telegram_id,
     resolve_partner_telegram_id,
@@ -22,14 +25,23 @@ def _result_webapp_url(session_id: str) -> str:
     return f"{get_settings().webapp_base_url}/session/{session_id}/result"
 
 
-async def notify_initiator_answers_saved(session_id: str) -> None:
+async def notify_initiator_answers_saved(session_id: str, *, force: bool = False) -> bool:
+    """
+    Send User1 the partner-share message with inline buttons.
+    Returns True if Telegram accepted the message.
+    Never raises — completion must survive Telegram failures.
+    """
     if not telegram_client.enabled:
-        return
+        logger.info("Telegram disabled — skip initiator share notify session_id=%s", session_id)
+        return False
+
     db = SessionLocal()
+    sent = False
     try:
         session = db.get(Session, session_id)
         if not session:
-            return
+            return False
+
         user_a = (
             db.query(Participant)
             .filter(
@@ -41,18 +53,110 @@ async def notify_initiator_answers_saved(session_id: str) -> None:
         chat_id = resolve_initiator_telegram_id(session, user_a)
         if not chat_id:
             logger.info(
-                "Skip answers-saved notify — no initiator telegram session_id=%s",
+                "Skip initiator share notify — no initiator telegram session_id=%s",
                 session_id,
             )
-            return
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="partner_share_message_skipped_no_telegram",
+                commit=True,
+            )
+            return False
+
+        if session.initiator_share_notified_at and not force:
+            logger.info(
+                "Skip initiator share notify — already sent session_id=%s at=%s",
+                session_id,
+                session.initiator_share_notified_at,
+            )
+            return True
+
+        token = ensure_invite_token(db, session)
+        db.commit()
+
+        keyboard = initiator_invite_keyboard(token, session_id)
+        if not keyboard:
+            logger.error(
+                "Cannot build share keyboard — bot username missing session_id=%s",
+                session_id,
+            )
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="partner_share_message_failed",
+                telegram_id=chat_id,
+                payload="missing_bot_username_or_token",
+                commit=True,
+            )
+            return False
+
+        logger.info(
+            "Sending initiator share notify session_id=%s chat_id=%s token_len=%s",
+            session_id,
+            chat_id,
+            len(token),
+        )
         try:
-            await telegram_client.send_message(chat_id, initiator_answers_saved())
+            sent = await telegram_client.send_message(
+                chat_id,
+                initiator_answers_saved(),
+                reply_markup=keyboard,
+            )
         except Exception:
             logger.exception(
-                "Failed answers-saved notify session_id=%s chat_id=%s",
+                "Failed initiator share notify session_id=%s chat_id=%s",
                 session_id,
                 chat_id,
             )
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="partner_share_message_failed",
+                telegram_id=chat_id,
+                payload="telegram_exception",
+                commit=True,
+            )
+            return False
+
+        if sent:
+            session.initiator_share_notified_at = datetime.utcnow()
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="partner_share_message_created",
+                telegram_id=chat_id,
+            )
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="initiator_test_completed",
+                telegram_id=chat_id,
+            )
+            db.commit()
+            logger.info(
+                "Initiator share notify sent session_id=%s chat_id=%s",
+                session_id,
+                chat_id,
+            )
+        else:
+            log_relationship_event(
+                db,
+                session_id=session_id,
+                event_type="partner_share_message_failed",
+                telegram_id=chat_id,
+                payload="telegram_api_not_ok",
+                commit=True,
+            )
+            logger.warning(
+                "Initiator share notify rejected by Telegram session_id=%s chat_id=%s",
+                session_id,
+                chat_id,
+            )
+        return sent
+    except Exception:
+        logger.exception("notify_initiator_answers_saved crashed session_id=%s", session_id)
+        return False
     finally:
         db.close()
 
@@ -107,7 +211,13 @@ async def send_result_notifications(session_id: str, *, completed_by: str = "use
             result_url,
         )
 
-        # Always attempt initiator first — User1 must receive the result.
+        log_relationship_event(
+            db,
+            session_id=session_id,
+            event_type="relationship_result_generated",
+            telegram_id=initiator_id,
+        )
+
         await _send_one_result(
             db,
             participant=user_a,
@@ -133,6 +243,7 @@ async def send_result_notifications(session_id: str, *, completed_by: str = "use
                 "Skip partner result notify — no partner_telegram_id session_id=%s",
                 session_id,
             )
+        db.commit()
     except Exception:
         logger.exception("send_result_notifications failed session_id=%s", session_id)
     finally:
@@ -190,10 +301,18 @@ async def _send_one_result(
 
     if sent:
         participant.result_notified_at = datetime.utcnow()
-        # Keep participant row aligned with the chat we actually messaged
         if participant.telegram_chat_id is None:
             participant.telegram_chat_id = chat_id
-        db.commit()
+        log_relationship_event(
+            db,
+            session_id=session_id,
+            event_type=(
+                "partner_test_completed"
+                if role_label == "partner"
+                else "initiator_result_notified"
+            ),
+            telegram_id=chat_id,
+        )
         logger.info(
             "Result notification sent role=%s session_id=%s chat_id=%s",
             role_label,
@@ -209,6 +328,5 @@ async def _send_one_result(
         )
 
 
-# Backward-compatible alias used by older call sites
 async def send_session_ready_notification(session_id: str) -> None:
     await send_result_notifications(session_id)

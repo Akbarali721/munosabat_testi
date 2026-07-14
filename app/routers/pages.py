@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import quote
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,10 +12,6 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-INVITE_SHARE_TEXT = (
-    "Men munosabatlarimizni yaxshiroq tushunish uchun ushbu savollarga javob berdim. "
-    "Endi sizning navbatingiz 😊"
-)
 from app.models import (
     Answer,
     Gender,
@@ -49,8 +44,14 @@ from app.services.premium import build_premium_result_copy
 from app.services.result_experience import build_result_experience
 from app.services.results import build_session_result
 from app.services.invite_token import ensure_invite_token
+from app.services.invite_share import (
+    PARTNER_SHARE_TEXT,
+    build_partner_deep_link,
+    build_telegram_share_url,
+)
 from app.services.session_complete import complete_partner_session
 from app.services.session_telegram import set_initiator_telegram_id, set_partner_telegram_id
+from app.services.events import log_relationship_event
 from app.services.telegram_auth import (
     TelegramAuthError,
     extract_init_data_from_request,
@@ -103,8 +104,8 @@ def _try_validate_init_data(
     request: Request,
     *,
     form_init_data: str | None = None,
-) -> int | None:
-    """Return telegram user id if initData valid; None if absent. Raises on invalid."""
+):
+    """Return TelegramWebAppUser if initData valid; None if absent. Raises on invalid."""
     init_data = extract_init_data_from_request(
         header_value=request.headers.get("X-Telegram-Init-Data"),
         form_value=form_init_data,
@@ -113,8 +114,7 @@ def _try_validate_init_data(
     )
     if not init_data:
         return None
-    user = validate_init_data(init_data)
-    return user.id
+    return validate_init_data(init_data)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -150,8 +150,12 @@ async def start_session(
     db: DbSession = Depends(get_db),
 ):
     telegram_id = None
+    telegram_username = None
     try:
-        telegram_id = _try_validate_init_data(request, form_init_data=init_data)
+        tg_user = _try_validate_init_data(request, form_init_data=init_data)
+        if tg_user:
+            telegram_id = tg_user.id
+            telegram_username = tg_user.username
     except TelegramAuthError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -174,6 +178,7 @@ async def start_session(
         name=name.strip(),
         gender=gender,
         telegram_chat_id=telegram_id,
+        telegram_username=telegram_username,
     )
     db.add(participant)
     db.commit()
@@ -283,7 +288,11 @@ async def submit_answers(
 
     telegram_id = None
     try:
-        telegram_id = _try_validate_init_data(request, form_init_data=init_data)
+        tg_user = _try_validate_init_data(request, form_init_data=init_data)
+        if tg_user:
+            telegram_id = tg_user.id
+            if tg_user.username:
+                participant.telegram_username = tg_user.username
     except TelegramAuthError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -336,6 +345,12 @@ async def submit_answers(
         set_initiator_telegram_id(session, telegram_id)
         session.status = SessionStatus.awaiting_user_b
         ensure_invite_token(db, session)
+        log_relationship_event(
+            db,
+            session_id=session_id,
+            event_type="initiator_test_completed",
+            telegram_id=telegram_id or session.initiator_telegram_id,
+        )
         db.commit()
         background_tasks.add_task(notify_initiator_answers_saved, session_id)
         return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
@@ -388,35 +403,16 @@ def invite_page(
     db.commit()
     db.refresh(session)
 
-    settings = get_settings()
-    invite_deep_link = ""
-    telegram_share_url = ""
-
-    if not token:
+    invite_deep_link = build_partner_deep_link(token) or ""
+    telegram_share_url = build_telegram_share_url(token) or ""
+    if not invite_deep_link:
         logger.error(
-            "invite_page: empty invite_token after ensure; cannot build share link "
-            "session_id=%s",
+            "invite_page: cannot build deep link session_id=%s has_token=%s",
             session_id,
+            bool(token),
         )
-    else:
-        username = settings.resolve_bot_username()
-        if not username:
-            logger.error(
-                "invite_page: bot username unavailable "
-                "(TELEGRAM_BOT_USERNAME empty and getMe fallback failed); "
-                "session_id=%s has_bot_token=%s invite_token_len=%s",
-                session_id,
-                bool(settings.telegram_bot_token),
-                len(token),
-            )
-        else:
-            # Token is opaque (urlsafe); do not treat hyphens as UUID segments.
-            invite_deep_link = f"https://t.me/{username}?start=rel_invite_{token}"
-            telegram_share_url = (
-                "https://t.me/share/url"
-                f"?url={quote(invite_deep_link, safe='')}"
-                f"&text={quote(INVITE_SHARE_TEXT, safe='')}"
-            )
+
+    bot_username = get_settings().resolve_bot_username() or ""
 
     return _render(
         request,
@@ -426,8 +422,66 @@ def invite_page(
             "session": session,
             "invite_deep_link": invite_deep_link,
             "telegram_share_url": telegram_share_url,
-            "invite_share_text": INVITE_SHARE_TEXT,
-            "telegram_linked": bool(user_a.telegram_chat_id),
+            "invite_share_text": PARTNER_SHARE_TEXT,
+            "telegram_linked": bool(
+                session.initiator_telegram_id or user_a.telegram_chat_id
+            ),
+            "bot_username": bot_username,
+        },
+    )
+
+
+@router.get("/session/{session_id}/status", response_class=HTMLResponse)
+def session_status_page(
+    request: Request,
+    session_id: str,
+    db: DbSession = Depends(get_db),
+):
+    session = _get_session_or_404(db, session_id)
+    user_a = _participant_by_role(session, ParticipantRole.user_a)
+    user_b = _participant_by_role(session, ParticipantRole.user_b)
+
+    initiator_done = bool(user_a and user_a.completed_at)
+    partner_started = bool(
+        session.partner_started_at
+        or session.partner_telegram_id
+        or (user_b and user_b.telegram_chat_id)
+    )
+    partner_done = bool(user_b and user_b.completed_at)
+    session_complete = session.status == SessionStatus.complete
+
+    if session_complete:
+        status_lead = "Ikkalangiz ham testni tugatdingiz. Natija tayyor."
+        status_hint = "Natijani pastdagi tugma orqali ochishingiz mumkin."
+    elif partner_done:
+        status_lead = "Sherigingiz ham tugatdi. Natija tayyorlanmoqda."
+        status_hint = "Bir oz kuting — natija Telegram orqali ham keladi."
+    elif partner_started:
+        status_lead = "Sherigingiz testni boshlagan. Javoblarini kutyapmiz."
+        status_hint = "U tugatganda natija Telegram orqali keladi."
+    elif initiator_done:
+        status_lead = "Siz tugatdingiz. Havolani sherikka yuboring."
+        status_hint = "Telegram botdagi «Sherikka yuborish» tugmasidan foydalaning."
+    else:
+        status_lead = "Test hali yakunlanmagan."
+        status_hint = "Avval o‘z savollaringizga javob bering."
+
+    token = session.invite_token or ""
+    telegram_share_url = build_telegram_share_url(token) if token else ""
+
+    return _render(
+        request,
+        "status.html",
+        {
+            "title": "Test holati",
+            "session": session,
+            "initiator_done": initiator_done,
+            "partner_started": partner_started,
+            "partner_done": partner_done,
+            "session_complete": session_complete,
+            "status_lead": status_lead,
+            "status_hint": status_hint,
+            "telegram_share_url": telegram_share_url,
         },
     )
 
@@ -486,8 +540,12 @@ async def join_session(
     user_b = _participant_by_role(session, ParticipantRole.user_b)
 
     telegram_id = None
+    telegram_username = None
     try:
-        telegram_id = _try_validate_init_data(request, form_init_data=init_data)
+        tg_user = _try_validate_init_data(request, form_init_data=init_data)
+        if tg_user:
+            telegram_id = tg_user.id
+            telegram_username = tg_user.username
     except TelegramAuthError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -505,6 +563,8 @@ async def join_session(
         if telegram_id:
             user_b.telegram_chat_id = telegram_id
             set_partner_telegram_id(session, telegram_id)
+        if telegram_username:
+            user_b.telegram_username = telegram_username
         if birthday and birthday.strip():
             try:
                 from datetime import date
@@ -527,6 +587,7 @@ async def join_session(
         name=name.strip(),
         gender=gender,
         telegram_chat_id=telegram_id,
+        telegram_username=telegram_username,
     )
     if birthday and birthday.strip():
         try:
