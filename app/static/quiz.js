@@ -79,7 +79,16 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    function fillTelegramInitData() {
+        const input = document.getElementById("init_data");
+        const tg = window.Telegram && window.Telegram.WebApp;
+        if (input && tg && tg.initData) {
+            input.value = tg.initData;
+        }
+    }
+
     function showLoadingThenSubmit() {
+        fillTelegramInitData();
         loadingEl.hidden = false;
         let i = 0;
         loadingText.textContent = messages[0];
@@ -90,6 +99,7 @@
 
         setTimeout(() => {
             clearInterval(interval);
+            fillTelegramInitData();
             form.submit();
         }, 3200);
     }

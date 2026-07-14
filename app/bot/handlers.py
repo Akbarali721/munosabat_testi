@@ -22,6 +22,7 @@ from app.copy.notifications import (
 )
 from app.models import Gender, Participant, ParticipantRole, Session, SessionStatus
 from app.services.invite_token import get_session_by_invite_token
+from app.services.session_telegram import set_initiator_telegram_id, set_partner_telegram_id
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,9 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
         .first()
     )
 
-    if user_a and user_a.telegram_chat_id == chat_id:
+    if (user_a and user_a.telegram_chat_id == chat_id) or (
+        session.initiator_telegram_id and session.initiator_telegram_id == chat_id
+    ):
         await telegram_client.send_message(chat_id, invite_self_blocked())
         return
 
@@ -196,8 +199,11 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
             telegram_chat_id=chat_id,
         )
         db.add(user_b)
+        db.flush()
     else:
         user_b.telegram_chat_id = chat_id
+
+    set_partner_telegram_id(session, chat_id)
 
     if session.status == SessionStatus.awaiting_user_b:
         session.status = SessionStatus.awaiting_user_b_answers
@@ -230,5 +236,6 @@ async def _link_user_a(chat_id: int, session_id: str, db: DbSession) -> None:
         return
 
     user_a.telegram_chat_id = chat_id
+    set_initiator_telegram_id(session, chat_id)
     db.commit()
     await telegram_client.send_message(chat_id, telegram_link_confirmed())

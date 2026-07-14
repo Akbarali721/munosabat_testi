@@ -10,6 +10,10 @@ from app.copy.notifications import (
 )
 from app.database import SessionLocal
 from app.models import Participant, ParticipantRole, Session, SessionStatus
+from app.services.session_telegram import (
+    resolve_initiator_telegram_id,
+    resolve_partner_telegram_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +27,9 @@ async def notify_initiator_answers_saved(session_id: str) -> None:
         return
     db = SessionLocal()
     try:
+        session = db.get(Session, session_id)
+        if not session:
+            return
         user_a = (
             db.query(Participant)
             .filter(
@@ -31,18 +38,32 @@ async def notify_initiator_answers_saved(session_id: str) -> None:
             )
             .first()
         )
-        if not user_a or not user_a.telegram_chat_id:
+        chat_id = resolve_initiator_telegram_id(session, user_a)
+        if not chat_id:
+            logger.info(
+                "Skip answers-saved notify — no initiator telegram session_id=%s",
+                session_id,
+            )
             return
-        await telegram_client.send_message(
-            user_a.telegram_chat_id,
-            initiator_answers_saved(),
-        )
+        try:
+            await telegram_client.send_message(chat_id, initiator_answers_saved())
+        except Exception:
+            logger.exception(
+                "Failed answers-saved notify session_id=%s chat_id=%s",
+                session_id,
+                chat_id,
+            )
     finally:
         db.close()
 
 
-async def send_result_notifications(session_id: str) -> None:
-    """Send independent result web_app messages; mark notified only after API success."""
+async def send_result_notifications(session_id: str, *, completed_by: str = "user_b") -> None:
+    """
+    Send final result web_app messages.
+    Primary recipient is always session.initiator_telegram_id (User1).
+    Partner receives a separate message when partner_telegram_id is known.
+    Telegram failures must not raise to the request path (caller uses BackgroundTasks).
+    """
     if not telegram_client.enabled:
         logger.debug("Telegram disabled — skip result notifications for %s", session_id)
         return
@@ -72,42 +93,120 @@ async def send_result_notifications(session_id: str) -> None:
         if not user_a or not user_b:
             return
 
+        initiator_id = resolve_initiator_telegram_id(session, user_a)
+        partner_id = resolve_partner_telegram_id(session, user_b)
         result_url = _result_webapp_url(session_id)
 
-        for participant, text in (
-            (user_a, result_ready_for_initiator()),
-            (user_b, result_ready_for_partner()),
-        ):
-            if participant.result_notified_at:
-                continue
-            if not participant.telegram_chat_id:
-                logger.info(
-                    "Skip result notify — no telegram_chat_id for participant %s",
-                    participant.id,
-                )
-                continue
+        logger.info(
+            "Result notify prepare session_id=%s initiator_telegram_id=%s "
+            "partner_telegram_id=%s completed_by=%s result_url=%s",
+            session_id,
+            initiator_id,
+            partner_id,
+            completed_by,
+            result_url,
+        )
 
-            sent = await telegram_client.send_message(
-                participant.telegram_chat_id,
-                text,
-                button_text="📊 Natijani ko‘rish",
-                web_app_url=result_url,
+        # Always attempt initiator first — User1 must receive the result.
+        await _send_one_result(
+            db,
+            participant=user_a,
+            chat_id=initiator_id,
+            text=result_ready_for_initiator(),
+            result_url=result_url,
+            session_id=session_id,
+            role_label="initiator",
+        )
+
+        if partner_id and partner_id != initiator_id:
+            await _send_one_result(
+                db,
+                participant=user_b,
+                chat_id=partner_id,
+                text=result_ready_for_partner(),
+                result_url=result_url,
+                session_id=session_id,
+                role_label="partner",
             )
-            if sent:
-                participant.result_notified_at = datetime.utcnow()
-                db.commit()
-                logger.info(
-                    "Result notification sent to chat %s",
-                    participant.telegram_chat_id,
-                )
-            else:
-                logger.warning(
-                    "Failed result notification for participant %s session %s",
-                    participant.id,
-                    session_id,
-                )
+        elif not partner_id:
+            logger.info(
+                "Skip partner result notify — no partner_telegram_id session_id=%s",
+                session_id,
+            )
+    except Exception:
+        logger.exception("send_result_notifications failed session_id=%s", session_id)
     finally:
         db.close()
+
+
+async def _send_one_result(
+    db,
+    *,
+    participant: Participant,
+    chat_id: int | None,
+    text: str,
+    result_url: str,
+    session_id: str,
+    role_label: str,
+) -> None:
+    if participant.result_notified_at:
+        logger.info(
+            "Skip %s result notify — already notified participant_id=%s",
+            role_label,
+            participant.id,
+        )
+        return
+    if not chat_id:
+        logger.info(
+            "Skip %s result notify — missing telegram id session_id=%s participant_id=%s",
+            role_label,
+            session_id,
+            participant.id,
+        )
+        return
+
+    logger.info(
+        "Sending %s result notify session_id=%s chat_id=%s result_url=%s",
+        role_label,
+        session_id,
+        chat_id,
+        result_url,
+    )
+    try:
+        sent = await telegram_client.send_message(
+            chat_id,
+            text,
+            button_text="📊 Natijani ko‘rish",
+            web_app_url=result_url,
+        )
+    except Exception:
+        logger.exception(
+            "Telegram error sending %s result session_id=%s chat_id=%s",
+            role_label,
+            session_id,
+            chat_id,
+        )
+        return
+
+    if sent:
+        participant.result_notified_at = datetime.utcnow()
+        # Keep participant row aligned with the chat we actually messaged
+        if participant.telegram_chat_id is None:
+            participant.telegram_chat_id = chat_id
+        db.commit()
+        logger.info(
+            "Result notification sent role=%s session_id=%s chat_id=%s",
+            role_label,
+            session_id,
+            chat_id,
+        )
+    else:
+        logger.warning(
+            "Failed result notification role=%s session_id=%s chat_id=%s",
+            role_label,
+            session_id,
+            chat_id,
+        )
 
 
 # Backward-compatible alias used by older call sites

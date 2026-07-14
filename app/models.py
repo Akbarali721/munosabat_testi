@@ -89,6 +89,9 @@ class Session(Base):
     invite_token: Mapped[str | None] = mapped_column(
         String(64), unique=True, nullable=True, index=True
     )
+    # Permanent session-level Telegram IDs (do not overwrite initiator via partner flow)
+    initiator_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    partner_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     participants: Mapped[list["Participant"]] = relationship(back_populates="session")
     answers: Mapped[list["Answer"]] = relationship(back_populates="session")

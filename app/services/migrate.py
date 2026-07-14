@@ -21,6 +21,8 @@ def migrate_db() -> None:
     migrate_payment_orders_table()
     migrate_invite_token_column()
     migrate_participant_result_notified_column()
+    migrate_session_telegram_id_columns()
+    backfill_session_telegram_ids_from_participants()
 
 
 def _is_postgres() -> bool:
@@ -189,6 +191,57 @@ def migrate_reminders_table() -> None:
     with engine.begin() as conn:
         conn.execute(text(ddl))
         logger.info("Created table reminders")
+
+
+def migrate_session_telegram_id_columns() -> None:
+    ddl = "BIGINT" if _is_postgres() else "INTEGER"
+    _add_column_if_missing("sessions", "initiator_telegram_id", ddl)
+    _add_column_if_missing("sessions", "partner_telegram_id", ddl)
+
+
+def backfill_session_telegram_ids_from_participants() -> None:
+    """Fill empty session telegram fields from participant rows (idempotent)."""
+    inspector = inspect(engine)
+    if "sessions" not in inspector.get_table_names():
+        return
+    session_cols = {col["name"] for col in inspector.get_columns("sessions")}
+    if "initiator_telegram_id" not in session_cols or "partner_telegram_id" not in session_cols:
+        return
+    if "participants" not in inspector.get_table_names():
+        return
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT s.id, s.initiator_telegram_id, s.partner_telegram_id,
+                       a.telegram_chat_id AS initiator_from_participant,
+                       b.telegram_chat_id AS partner_from_participant
+                FROM sessions s
+                LEFT JOIN participants a
+                  ON a.session_id = s.id AND a.role = 'user_a'
+                LEFT JOIN participants b
+                  ON b.session_id = s.id AND b.role = 'user_b'
+                """
+            )
+        ).mappings().all()
+
+        for row in rows:
+            if row["initiator_telegram_id"] is None and row["initiator_from_participant"] is not None:
+                conn.execute(
+                    text(
+                        "UPDATE sessions SET initiator_telegram_id = :tid WHERE id = :sid"
+                    ),
+                    {"tid": row["initiator_from_participant"], "sid": row["id"]},
+                )
+            if row["partner_telegram_id"] is None and row["partner_from_participant"] is not None:
+                conn.execute(
+                    text(
+                        "UPDATE sessions SET partner_telegram_id = :tid WHERE id = :sid"
+                    ),
+                    {"tid": row["partner_from_participant"], "sid": row["id"]},
+                )
+
 
 
 def migrate_payment_orders_table() -> None:

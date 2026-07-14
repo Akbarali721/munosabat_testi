@@ -50,6 +50,7 @@ from app.services.result_experience import build_result_experience
 from app.services.results import build_session_result
 from app.services.invite_token import ensure_invite_token
 from app.services.session_complete import complete_partner_session
+from app.services.session_telegram import set_initiator_telegram_id, set_partner_telegram_id
 from app.services.telegram_auth import (
     TelegramAuthError,
     extract_init_data_from_request,
@@ -162,6 +163,8 @@ async def start_session(
             session.anniversary_date = date.fromisoformat(anniversary_date.strip())
         except ValueError:
             pass
+    if telegram_id:
+        session.initiator_telegram_id = int(telegram_id)
     db.add(session)
     db.flush()
 
@@ -256,6 +259,7 @@ async def submit_answers(
     session_id: str,
     background_tasks: BackgroundTasks,
     role: str = Form("user_a"),
+    init_data: str | None = Form(None),
     db: DbSession = Depends(get_db),
 ):
     session = _get_session_or_404(db, session_id)
@@ -276,6 +280,12 @@ async def submit_answers(
         if participant_role == ParticipantRole.user_a:
             return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
         return RedirectResponse(url=f"/session/{session_id}/waiting", status_code=303)
+
+    telegram_id = None
+    try:
+        telegram_id = _try_validate_init_data(request, form_init_data=init_data)
+    except TelegramAuthError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
     form = await request.form()
     questions = get_questions_for_participant(
@@ -323,19 +333,22 @@ async def submit_answers(
     participant.completed_at = datetime.utcnow()
 
     if participant_role == ParticipantRole.user_a:
+        set_initiator_telegram_id(session, telegram_id)
         session.status = SessionStatus.awaiting_user_b
         ensure_invite_token(db, session)
         db.commit()
         background_tasks.add_task(notify_initiator_answers_saved, session_id)
         return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
 
+    set_partner_telegram_id(session, telegram_id)
     db.commit()
-    newly_completed = complete_partner_session(db, session_id)
-    if newly_completed:
-        background_tasks.add_task(send_result_notifications, session_id)
-    else:
-        # Already complete — still retry any missing per-participant notifications
-        background_tasks.add_task(send_result_notifications, session_id)
+    complete_partner_session(db, session_id)
+    # Always attempt notifications; send_result_notifications is idempotent per participant
+    background_tasks.add_task(
+        send_result_notifications,
+        session_id,
+        completed_by="user_b",
+    )
 
     return RedirectResponse(
         url=f"/session/{session_id}/waiting",
@@ -491,6 +504,7 @@ async def join_session(
         user_b.gender = gender
         if telegram_id:
             user_b.telegram_chat_id = telegram_id
+            set_partner_telegram_id(session, telegram_id)
         if birthday and birthday.strip():
             try:
                 from datetime import date
@@ -522,6 +536,8 @@ async def join_session(
         except ValueError:
             pass
     db.add(participant)
+    db.flush()
+    set_partner_telegram_id(session, telegram_id)
     session.status = SessionStatus.awaiting_user_b_answers
     db.commit()
 
