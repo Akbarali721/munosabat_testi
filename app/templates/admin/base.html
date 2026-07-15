@@ -12,7 +12,8 @@
         <div class="admin-wrap admin-top__inner">
             <a class="admin-brand" href="/admin/relationship-sessions">Qadam Admin</a>
             <nav class="admin-nav">
-                <a href="/admin/relationship-sessions">Munosabat sessiyalari</a>
+                <a href="/admin/relationship-sessions{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Munosabat sessiyalari</a>
+                <a href="/admin/premium-payments{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Premium to‘lovlar</a>
                 <form method="post" action="/admin/logout" class="admin-inline-form">
                     <button type="submit" class="admin-link-btn">Chiqish</button>
                 </form>

@@ -29,13 +29,11 @@
             <p class="qd-premium-lock__price">{{ "{:,}".format(premium_price).replace(",", " ") }} so‘m</p>
             <p class="qd-premium-lock__note">{{ paywall_tagline }}</p>
             {% if payment_demo %}
-            <p class="qd-premium-lock__demo">Hozir demo rejim — bir bosishda ochiladi. Haqiqiy to‘lov keyinroq ulanadi.</p>
+            <p class="qd-premium-lock__demo">Demo rejim: avtomatik ochilmaydi. To‘lov so‘rovidan keyin admin tasdiqlashi kerak.</p>
             {% endif %}
-            <form method="post" action="/session/{{ session.id }}/premium/unlock">
-                <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
-                    To‘liq tahlilni ochish
-                </button>
-            </form>
+            <a href="/session/{{ session.id }}/premium/payment?role={{ request.query_params.get('role', 'user_a') }}" class="qd-btn qd-btn--primary qd-btn--full">
+                To‘liq tahlilni ochish
+            </a>
         </div>
     </section>
 

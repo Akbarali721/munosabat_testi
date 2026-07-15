@@ -67,6 +67,12 @@ class PaymentStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class PremiumPaymentStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
 class PaymentProvider(str, enum.Enum):
     demo = "demo"
     payme = "payme"
@@ -83,6 +89,10 @@ class Session(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_premium_unlocked: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_unlocked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    premium_payment_status: Mapped[PremiumPaymentStatus] = mapped_column(
+        _str_enum(PremiumPaymentStatus),
+        default=PremiumPaymentStatus.pending,
+    )
     anniversary_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     challenge_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     challenge_progress_json: Mapped[str] = mapped_column(Text, default="{}")

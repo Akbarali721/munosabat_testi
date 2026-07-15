@@ -97,6 +97,11 @@ def migrate_session_premium_columns() -> None:
         statements.append(
             f"ALTER TABLE sessions ADD COLUMN premium_unlocked_at {_timestamp_type()}"
         )
+    if "premium_payment_status" not in columns:
+        statements.append(
+            "ALTER TABLE sessions ADD COLUMN premium_payment_status "
+            "VARCHAR(64) NOT NULL DEFAULT 'pending'"
+        )
 
     if not statements:
         return
@@ -104,7 +109,16 @@ def migrate_session_premium_columns() -> None:
     with engine.begin() as conn:
         for statement in statements:
             conn.execute(text(statement))
-
+        # First introduction: old sessions stay locked until admin approval
+        if any("premium_payment_status" in s for s in statements):
+            conn.execute(
+                text(
+                    "UPDATE sessions SET is_premium_unlocked = "
+                    f"{_boolean_default(False)}, "
+                    "premium_unlocked_at = NULL, "
+                    "premium_payment_status = 'pending'"
+                )
+            )
 
 def migrate_participant_telegram_column() -> None:
     # BIGINT is safer for Telegram chat ids on Postgres; INTEGER remains fine on SQLite.

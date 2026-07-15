@@ -402,10 +402,11 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
 
         self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", locked.text)
         self.assertIn("qd-result-premium--locked", locked.text)
+        self.assertIn("/premium/payment", locked.text)
         self.assertNotIn("To‘liq tahlilni ikkalangiz uchun ochish", unlocked.text)
         self.assertIn("To‘liq tahlil ochilgan", unlocked.text)
 
-    def test_user_a_unlock_opens_for_user_b(self):
+    def test_unlock_request_does_not_open_premium(self):
         session = self._create_complete_session(premium=False)
         unlock = self.client.post(
             f"/session/{session.id}/premium/unlock",
@@ -413,28 +414,40 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
             follow_redirects=False,
         )
         self.assertEqual(unlock.status_code, 303)
-        self.assertIn("role=user_a", unlock.headers["location"])
-        self.assertIn("opened=1", unlock.headers["location"])
+        self.assertIn("/premium/payment", unlock.headers["location"])
+        self.assertIn("requested=1", unlock.headers["location"])
+
+        premium = self.client.get(
+            f"/session/{session.id}/premium",
+            follow_redirects=False,
+        )
+        self.assertEqual(premium.status_code, 302)
+        self.assertIn("/premium/payment", premium.headers["location"])
 
         for telegram_id in (1001, 2002):
             page = self._get_result(session.id, telegram_id)
-            self.assertIn("To‘liq tahlil ochilgan", page.text)
-            self.assertNotIn("To‘liq tahlilni ikkalangiz uchun ochish", page.text)
+            self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", page.text)
+            self.assertNotIn("To‘liq tahlil ochilgan", page.text)
 
-    def test_user_b_unlock_opens_for_user_a(self):
+    def test_second_unlock_request_while_pending(self):
         session = self._create_complete_session(premium=False)
-        unlock = self.client.post(
+        self.client.post(
+            f"/session/{session.id}/premium/unlock",
+            data={"role": "user_a"},
+            follow_redirects=False,
+        )
+        again = self.client.post(
             f"/session/{session.id}/premium/unlock",
             data={"role": "user_b"},
             follow_redirects=False,
         )
-        self.assertEqual(unlock.status_code, 303)
-        self.assertIn("role=user_b", unlock.headers["location"])
+        self.assertEqual(again.status_code, 303)
+        self.assertIn("/premium/payment", again.headers["location"])
+        page = self._get_result(session.id, 1001)
+        self.assertEqual(page.status_code, 200)
+        self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", page.text)
 
-        page_a = self._get_result(session.id, 1001)
-        self.assertIn("To‘liq tahlil ochilgan", page_a.text)
-
-    def test_second_unlock_does_not_break(self):
+    def test_already_approved_unlock_goes_to_premium(self):
         session = self._create_complete_session(premium=True)
         again = self.client.post(
             f"/session/{session.id}/premium/unlock",
@@ -442,8 +455,8 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
             follow_redirects=False,
         )
         self.assertEqual(again.status_code, 303)
-        page = self._get_result(session.id, 1001)
-        self.assertEqual(page.status_code, 200)
+        self.assertIn("/premium", again.headers["location"])
+        self.assertNotIn("/payment", again.headers["location"])
 
     def test_invite_shows_share_when_partner_pending(self):
         session = self._create_complete_session()

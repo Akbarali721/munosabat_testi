@@ -18,6 +18,7 @@ from app.services.admin_sessions import (
     STATUS_LABELS,
     compute_stats,
     get_session_detail,
+    list_premium_payments,
     list_sessions,
     mask_token,
 )
@@ -27,6 +28,7 @@ from app.services.notifications import (
     notify_initiator_answers_saved,
     send_result_notifications,
 )
+from app.services.payment import approve_premium, reject_premium, reblock_premium
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
@@ -56,10 +58,69 @@ def _require_admin(request: Request) -> None:
         raise HTTPException(status_code=303, detail="login", headers={"Location": "/admin/login"})
 
 
+def _admin_token_from_request(request: Request, form: dict | None = None) -> str:
+    if form:
+        for key in ("admin_token", "token"):
+            val = form.get(key)
+            if val:
+                text = str(val).strip()
+                if text:
+                    return text
+    return (
+        request.query_params.get("admin_token")
+        or request.query_params.get("token")
+        or ""
+    ).strip()
+
+
+def _with_admin_token(url: str, token: str) -> str:
+    if not token:
+        return url
+    from urllib.parse import quote
+
+    qs = f"admin_token={quote(token)}"
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}{qs}"
+
+
+def _preserve_admin_token(request: Request, url: str, form: dict | None = None) -> str:
+    return _with_admin_token(url, _admin_token_from_request(request, form))
+
+
+def _safe_admin_next(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    candidate = str(raw).strip()
+    if not candidate.startswith("/admin"):
+        return None
+    if candidate.startswith("//"):
+        return None
+    return candidate
+
+
+def _redirect_after_premium_action(
+    request: Request,
+    session_id: str,
+    *,
+    msg: str | None = None,
+    next_url: str | None = None,
+    form: dict | None = None,
+):
+    token = _admin_token_from_request(request, form)
+    target = _safe_admin_next(next_url)
+    if target:
+        if msg:
+            sep = "&" if "?" in target else "?"
+            target = f"{target}{sep}msg={msg}"
+        return RedirectResponse(_with_admin_token(target, token), status_code=303)
+    return _redirect_detail(session_id, msg=msg)
+
+
 def _render(request: Request, name: str, context: dict | None = None, status_code: int = 200):
     ctx = dict(context or {})
     ctx["request"] = request
     ctx["admin_ok"] = _is_admin(request)
+    ctx["admin_token"] = _admin_token_from_request(request)
     return templates.TemplateResponse(name, ctx, status_code=status_code)
 
 
@@ -112,6 +173,32 @@ def admin_home(request: Request):
     if not _is_admin(request):
         return RedirectResponse("/admin/login", status_code=303)
     return RedirectResponse("/admin/relationship-sessions", status_code=303)
+
+
+@router.get("/premium-payments", response_class=HTMLResponse)
+def premium_payments_list(
+    request: Request,
+    db: DbSession = Depends(get_db),
+    msg: str | None = None,
+):
+    if not _is_admin(request):
+        return RedirectResponse(
+            _preserve_admin_token(request, "/admin/login"),
+            status_code=303,
+        )
+
+    grouped = list_premium_payments(db)
+    return _render(
+        request,
+        "admin/premium_payments.html",
+        {
+            "title": "Premium to‘lovlar",
+            "pending": grouped["pending"],
+            "approved": grouped["approved"],
+            "rejected": grouped["rejected"],
+            "flash_ok": msg,
+        },
+    )
 
 
 @router.get("/relationship-sessions", response_class=HTMLResponse)
@@ -327,3 +414,72 @@ def admin_cancel_session(
     )
     db.commit()
     return _redirect_detail(session_id, msg="Sessiya bekor qilindi")
+
+
+@router.post("/relationship-sessions/{session_id}/approve-premium")
+async def admin_approve_premium(
+    request: Request,
+    session_id: str,
+    db: DbSession = Depends(get_db),
+):
+    if not _is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    session = db.get(Session, session_id)
+    if not session:
+        raise HTTPException(status_code=404)
+    form = await request.form()
+    approve_premium(db, session, actor="admin_panel")
+    db.commit()
+    return _redirect_after_premium_action(
+        request,
+        session_id,
+        msg="Premium tasdiqlandi va ochildi",
+        next_url=form.get("next"),
+        form=dict(form),
+    )
+
+
+@router.post("/relationship-sessions/{session_id}/reject-premium")
+async def admin_reject_premium(
+    request: Request,
+    session_id: str,
+    db: DbSession = Depends(get_db),
+):
+    if not _is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    session = db.get(Session, session_id)
+    if not session:
+        raise HTTPException(status_code=404)
+    form = await request.form()
+    reject_premium(db, session, actor="admin_panel")
+    db.commit()
+    return _redirect_after_premium_action(
+        request,
+        session_id,
+        msg="To‘lov rad etildi, premium yopiq",
+        next_url=form.get("next"),
+        form=dict(form),
+    )
+
+
+@router.post("/relationship-sessions/{session_id}/reblock-premium")
+async def admin_reblock_premium(
+    request: Request,
+    session_id: str,
+    db: DbSession = Depends(get_db),
+):
+    if not _is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    session = db.get(Session, session_id)
+    if not session:
+        raise HTTPException(status_code=404)
+    form = await request.form()
+    reblock_premium(db, session, actor="admin_panel")
+    db.commit()
+    return _redirect_after_premium_action(
+        request,
+        session_id,
+        msg="Premium qayta bloklandi",
+        next_url=form.get("next"),
+        form=dict(form),
+    )

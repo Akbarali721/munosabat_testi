@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.database import get_db
 from app.routers.pages import _require_complete_session
 from app.services.challenge import build_challenge_view, mark_day_complete, start_challenge_if_needed
+from app.services.payment import payment_page_url, premium_access_granted
 from app.services.retention import schedule_challenge_reminders
 from app.ui import random_footer_quote
 
@@ -30,8 +31,11 @@ def challenge_page(
 ):
     session, user_a, user_b = _require_complete_session(db, session_id)
 
-    if not session.is_premium_unlocked:
-        return RedirectResponse(url=f"/session/{session_id}/premium", status_code=303)
+    if not premium_access_granted(session):
+        return RedirectResponse(
+            url=payment_page_url(session_id),
+            status_code=302,
+        )
 
     start_challenge_if_needed(session)
     db.commit()
@@ -59,7 +63,7 @@ def complete_challenge_day(
 ):
     session, _, _ = _require_complete_session(db, session_id)
 
-    if not session.is_premium_unlocked:
+    if not premium_access_granted(session):
         raise HTTPException(status_code=403, detail="Premium ochilmagan")
 
     if not mark_day_complete(session, day):

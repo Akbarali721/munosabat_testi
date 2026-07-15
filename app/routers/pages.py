@@ -40,6 +40,7 @@ from app.services.notifications import (
 )
 from app.services.retention import schedule_session_reminders
 from app.copy.premium_experience import PAYWALL_HEADLINE, PAYWALL_LEAD, PAYWALL_TAGLINE, UNLOCK_SPLASH
+from app.services.payment import payment_page_url, premium_access_granted
 from app.services.premium import build_premium_result_copy
 from app.services.result_experience import build_result_experience
 from app.services.results import build_session_result
@@ -707,11 +708,12 @@ async def result_page(
         viewer = user_a
         viewer_role = ParticipantRole.user_a
 
+    granted = premium_access_granted(session)
     experience = build_result_experience(
         result,
         viewer=viewer,
         stage_label=STAGE_LABELS[session.relationship_stage],
-        premium_unlocked=bool(session.is_premium_unlocked),
+        premium_unlocked=granted,
     )
 
     return _render(
@@ -742,23 +744,27 @@ def _require_complete_session(db: DbSession, session_id: str) -> tuple[Session, 
 
 
 @router.get("/session/{session_id}/premium", response_class=HTMLResponse)
+@router.get("/love/session/{session_id}/premium", response_class=HTMLResponse)
 def premium_page(
     request: Request,
     session_id: str,
+    role: str = "user_a",
     db: DbSession = Depends(get_db),
 ):
-    session = _get_session_or_404(db, session_id)
-    user_a = _participant_by_role(session, ParticipantRole.user_a)
-    user_b = _participant_by_role(session, ParticipantRole.user_b)
-    if not user_a or not user_b or not user_a.completed_at or not user_b.completed_at:
-        raise HTTPException(status_code=400, detail="Ikkala ishtirokchi ham savollarni tugatishi kerak")
+    session, _, _ = _require_complete_session(db, session_id)
+    viewer_role = "user_b" if role == "user_b" else "user_a"
+
+    if not premium_access_granted(session):
+        return RedirectResponse(
+            url=payment_page_url(session_id, role=viewer_role),
+            status_code=302,
+        )
 
     result = build_session_result(db, session)
     if not result:
         raise HTTPException(status_code=500, detail="Natijani shakllantirishda xatolik yuz berdi")
 
-    premium = build_premium_result_copy(result) if session.is_premium_unlocked else None
-    settings = get_settings()
+    premium = build_premium_result_copy(result)
 
     return _render(
         request,
@@ -774,6 +780,7 @@ def premium_page(
             "paywall_lead": PAYWALL_LEAD,
             "paywall_tagline": PAYWALL_TAGLINE,
             "unlock_splash": UNLOCK_SPLASH,
-            "payment_demo": settings.payment_demo,
+            "payment_demo": False,
+            "premium_granted": True,
         },
     )

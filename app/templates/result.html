@@ -89,13 +89,10 @@
 
             {% if not experience.premium_unlocked %}
             <div class="qd-card qd-card--premium qd-premium-cta">
-                <form method="post" action="/session/{{ session.id }}/premium/unlock">
-                    <input type="hidden" name="role" value="{{ viewer_role }}">
-                    <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
-                        To‘liq tahlilni ikkalangiz uchun ochish — {{ "{:,}".format(premium_price).replace(",", " ") }} so‘m
-                    </button>
-                </form>
-                <p class="qd-premium-cta__note">Bir marta to‘lov qilinadi. Natija ikkalangizga ham ochiladi.</p>
+                <a href="/session/{{ session.id }}/premium/payment?role={{ viewer_role }}" class="qd-btn qd-btn--primary qd-btn--full">
+                    To‘liq tahlilni ikkalangiz uchun ochish — {{ "{:,}".format(premium_price).replace(",", " ") }} so‘m
+                </a>
+                <p class="qd-premium-cta__note">Bir marta to‘lov qilinadi. Admin tasdiqlagach natija ikkalangizga ochiladi.</p>
             </div>
             {% else %}
             <p class="qd-premium-unlocked-note">✅ To‘liq tahlil ochilgan — ikkalangiz ham ko‘ra olasiz.</p>

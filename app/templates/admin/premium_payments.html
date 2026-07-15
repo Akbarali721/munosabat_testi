@@ -1,0 +1,206 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }} — Qadam Admin{% endblock %}
+{% block content %}
+<h1 class="admin-h1">Premium to‘lovlar</h1>
+<p class="admin-muted">Pending so‘rovlar yuqorida. Tasdiqlanganlar pastroqda yig‘ilgan.</p>
+
+{% if flash_ok %}<p class="admin-alert admin-alert--ok">{{ flash_ok }}</p>{% endif %}
+
+<section class="admin-card admin-premium-section">
+    <h2>Kutilayotgan to‘lovlar ({{ pending|length }})</h2>
+
+    {% if not pending %}
+    <p class="admin-muted">Hozircha pending to‘lov yo‘q.</p>
+    {% else %}
+
+    {# Desktop table #}
+    <div class="admin-premium-table-wrap admin-premium-desktop">
+        <table class="admin-table admin-premium-table">
+            <thead>
+                <tr>
+                    <th>Foydalanuvchi</th>
+                    <th>Telegram ID</th>
+                    <th>Test turi</th>
+                    <th>Summa</th>
+                    <th>Yaratilgan</th>
+                    <th>Holat</th>
+                    <th>Chek</th>
+                    <th>Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in pending %}
+                <tr>
+                    <td>{{ row.user_name }}</td>
+                    <td class="mono">{{ row.telegram_id or '—' }}</td>
+                    <td>{{ row.test_type }}</td>
+                    <td>{{ "{:,}".format(row.amount_uzs).replace(",", " ") }} so‘m</td>
+                    <td>{{ row.created_at.strftime('%d.%m.%Y %H:%M') if row.created_at else '—' }}</td>
+                    <td><span class="admin-badge admin-badge--pending">{{ row.payment_status }}</span></td>
+                    <td>
+                        {% if row.receipt_url %}
+                        <a href="{{ row.receipt_url }}" target="_blank" rel="noopener">{{ row.receipt_label }}</a>
+                        {% else %}
+                        <span class="admin-muted">{{ row.receipt_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="admin-premium-actions-cell">
+                        <form method="post" action="/admin/relationship-sessions/{{ row.session.id }}/approve-premium" class="admin-premium-form">
+                            <input type="hidden" name="next" value="/admin/premium-payments">
+                            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+                            <button type="submit" class="admin-btn admin-btn--approve">Approve Premium</button>
+                        </form>
+                        <form method="post" action="/admin/relationship-sessions/{{ row.session.id }}/reject-premium" class="admin-premium-form">
+                            <input type="hidden" name="next" value="/admin/premium-payments">
+                            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+                            <button type="submit" class="admin-btn admin-btn--reject">Reject</button>
+                        </form>
+                        <a class="admin-muted" href="/admin/relationship-sessions/{{ row.session.id }}{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Batafsil</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Mobile cards #}
+    <div class="admin-premium-cards admin-premium-mobile">
+        {% for row in pending %}
+        <article class="admin-payment-card">
+            <header class="admin-payment-card__head">
+                <h3 class="admin-payment-card__name">{{ row.user_name }}</h3>
+                <span class="admin-badge admin-badge--pending">{{ row.payment_status }}</span>
+            </header>
+            <dl class="admin-payment-card__dl">
+                <div><dt>Telegram ID</dt><dd class="mono">{{ row.telegram_id or '—' }}</dd></div>
+                <div><dt>Test turi</dt><dd>{{ row.test_type }}</dd></div>
+                <div><dt>Summa</dt><dd>{{ "{:,}".format(row.amount_uzs).replace(",", " ") }} so‘m</dd></div>
+                <div><dt>Yaratilgan</dt><dd>{{ row.created_at.strftime('%d.%m.%Y %H:%M') if row.created_at else '—' }}</dd></div>
+                <div>
+                    <dt>Chek</dt>
+                    <dd>
+                        {% if row.receipt_url %}
+                        <a href="{{ row.receipt_url }}" target="_blank" rel="noopener">{{ row.receipt_label }}</a>
+                        {% else %}
+                        {{ row.receipt_label }}
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+            <div class="admin-payment-card__actions">
+                <form method="post" action="/admin/relationship-sessions/{{ row.session.id }}/approve-premium">
+                    <input type="hidden" name="next" value="/admin/premium-payments">
+                    {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+                    <button type="submit" class="admin-btn admin-btn--approve admin-btn--touch">Approve Premium</button>
+                </form>
+                <form method="post" action="/admin/relationship-sessions/{{ row.session.id }}/reject-premium">
+                    <input type="hidden" name="next" value="/admin/premium-payments">
+                    {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+                    <button type="submit" class="admin-btn admin-btn--reject admin-btn--touch-sm">Reject</button>
+                </form>
+                <a class="admin-payment-card__detail" href="/admin/relationship-sessions/{{ row.session.id }}{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Sessiya batafsil →</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
+<details class="admin-card admin-premium-collapsed" {% if not pending and approved %}open{% endif %}>
+    <summary class="admin-premium-collapsed__summary">
+        Tasdiqlangan to‘lovlar ({{ approved|length }})
+    </summary>
+    {% if not approved %}
+    <p class="admin-muted">Hali tasdiqlangan to‘lov yo‘q.</p>
+    {% else %}
+    <div class="admin-premium-table-wrap admin-premium-desktop">
+        <table class="admin-table admin-premium-table">
+            <thead>
+                <tr>
+                    <th>Foydalanuvchi</th>
+                    <th>Telegram ID</th>
+                    <th>Test turi</th>
+                    <th>Summa</th>
+                    <th>Yaratilgan</th>
+                    <th>Holat</th>
+                    <th>Chek</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in approved %}
+                <tr>
+                    <td>{{ row.user_name }}</td>
+                    <td class="mono">{{ row.telegram_id or '—' }}</td>
+                    <td>{{ row.test_type }}</td>
+                    <td>{{ "{:,}".format(row.amount_uzs).replace(",", " ") }} so‘m</td>
+                    <td>{{ row.created_at.strftime('%d.%m.%Y %H:%M') if row.created_at else '—' }}</td>
+                    <td><span class="admin-badge admin-badge--completed">approved</span></td>
+                    <td>
+                        {% if row.receipt_url %}
+                        <a href="{{ row.receipt_url }}" target="_blank" rel="noopener">{{ row.receipt_label }}</a>
+                        {% else %}
+                        <span class="admin-muted">{{ row.receipt_label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/admin/relationship-sessions/{{ row.session.id }}{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Batafsil</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="admin-premium-cards admin-premium-mobile">
+        {% for row in approved %}
+        <article class="admin-payment-card admin-payment-card--done">
+            <header class="admin-payment-card__head">
+                <h3 class="admin-payment-card__name">{{ row.user_name }}</h3>
+                <span class="admin-badge admin-badge--completed">approved</span>
+            </header>
+            <dl class="admin-payment-card__dl">
+                <div><dt>Telegram ID</dt><dd class="mono">{{ row.telegram_id or '—' }}</dd></div>
+                <div><dt>Test turi</dt><dd>{{ row.test_type }}</dd></div>
+                <div><dt>Summa</dt><dd>{{ "{:,}".format(row.amount_uzs).replace(",", " ") }} so‘m</dd></div>
+                <div><dt>Yaratilgan</dt><dd>{{ row.created_at.strftime('%d.%m.%Y %H:%M') if row.created_at else '—' }}</dd></div>
+                <div>
+                    <dt>Chek</dt>
+                    <dd>
+                        {% if row.receipt_url %}
+                        <a href="{{ row.receipt_url }}" target="_blank" rel="noopener">{{ row.receipt_label }}</a>
+                        {% else %}
+                        {{ row.receipt_label }}
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+            <a class="admin-payment-card__detail" href="/admin/relationship-sessions/{{ row.session.id }}{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Sessiya batafsil →</a>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+</details>
+
+{% if rejected %}
+<details class="admin-card admin-premium-collapsed">
+    <summary class="admin-premium-collapsed__summary">
+        Rad etilgan ({{ rejected|length }})
+    </summary>
+    <div class="admin-premium-cards">
+        {% for row in rejected %}
+        <article class="admin-payment-card admin-payment-card--done">
+            <header class="admin-payment-card__head">
+                <h3 class="admin-payment-card__name">{{ row.user_name }}</h3>
+                <span class="admin-badge admin-badge--expired">rejected</span>
+            </header>
+            <dl class="admin-payment-card__dl">
+                <div><dt>Telegram ID</dt><dd class="mono">{{ row.telegram_id or '—' }}</dd></div>
+                <div><dt>Summa</dt><dd>{{ "{:,}".format(row.amount_uzs).replace(",", " ") }} so‘m</dd></div>
+            </dl>
+            <a class="admin-payment-card__detail" href="/admin/relationship-sessions/{{ row.session.id }}{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Sessiya batafsil →</a>
+        </article>
+        {% endfor %}
+    </div>
+</details>
+{% endif %}
+{% endblock %}

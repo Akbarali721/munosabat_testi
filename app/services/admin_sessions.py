@@ -15,11 +15,14 @@ from app.models import (
     ParticipantRole,
     PaymentOrder,
     PaymentStatus,
+    PremiumPaymentStatus,
     RelationshipEvent,
     Session,
     SessionStatus,
 )
 from app.services.invite_share import build_partner_deep_link
+from app.services.payment import premium_access_granted
+from app.constants import PREMIUM_PRICE_UZS, STAGE_LABELS
 
 
 EVENT_LABELS: dict[str, str] = {
@@ -46,6 +49,11 @@ EVENT_LABELS: dict[str, str] = {
     "admin_revoke_token": "Admin: taklif tokenini bekor qildi",
     "admin_regenerate_token": "Admin: yangi token yaratdi",
     "admin_cancel_session": "Admin: sessiyani bekor qildi",
+    "admin_premium_approved": "Admin: premiumni tasdiqladi",
+    "admin_premium_rejected": "Admin: to‘lovni rad etdi",
+    "admin_premium_reblocked": "Admin: premiumni qayta blokladi",
+    "premium_requested": "Premium so‘rovi yuborildi",
+    "premium_payment_received": "Premium to‘lov qabul qilindi",
 }
 
 
@@ -346,7 +354,10 @@ def compute_stats(db: DbSession) -> dict[str, Any]:
     )
     premium = (
         db.query(func.count(Session.id))
-        .filter(Session.is_premium_unlocked.is_(True))
+        .filter(
+            Session.is_premium_unlocked.is_(True),
+            Session.premium_payment_status == PremiumPaymentStatus.approved,
+        )
         .scalar()
         or 0
     )
@@ -443,9 +454,123 @@ def get_session_detail(db: DbSession, session_id: str) -> dict[str, Any] | None:
         "answers_b": answer_count(user_b),
         "timeline": timeline,
         "deep_link": deep_link,
-        "premium_unlocked": session.is_premium_unlocked,
+        "premium_unlocked": premium_access_granted(session),
+        "premium_payment_status": getattr(
+            session.premium_payment_status, "value", session.premium_payment_status
+        ),
         "payment_paid": paid,
         "result_ready": session.status == SessionStatus.complete,
         "result_sent_user1": bool(user_a and user_a.result_notified_at),
         "result_sent_user2": bool(user_b and user_b.result_notified_at),
     }
+
+
+@dataclass
+class PremiumPaymentRow:
+    session: Session
+    user_name: str
+    telegram_id: int | None
+    test_type: str
+    amount_uzs: int
+    created_at: datetime | None
+    payment_status: str
+    receipt_url: str | None
+    receipt_label: str
+    order: PaymentOrder | None
+    premium_access: bool
+
+
+def _latest_order(session: Session) -> PaymentOrder | None:
+    orders = list(session.payment_orders or [])
+    if not orders:
+        return None
+    return max(orders, key=lambda o: o.created_at or datetime.min)
+
+
+def _receipt_info(order: PaymentOrder | None) -> tuple[str | None, str]:
+    if not order:
+        return None, "Chek yo‘q"
+    ext = (order.external_id or "").strip()
+    if ext.startswith("http://") or ext.startswith("https://"):
+        return ext, "Chekni ochish"
+    if ext:
+        return None, f"Tashqi ID: {ext}"
+    return None, "Chek yo‘q"
+
+
+def build_premium_payment_row(session: Session) -> PremiumPaymentRow:
+    user_a = next(
+        (p for p in session.participants if p.role == ParticipantRole.user_a),
+        None,
+    )
+    order = _latest_order(session)
+    status = getattr(session.premium_payment_status, "value", session.premium_payment_status) or "pending"
+    receipt_url, receipt_label = _receipt_info(order)
+    created = None
+    if order and order.created_at:
+        created = order.created_at
+    elif session.premium_unlocked_at:
+        created = session.premium_unlocked_at
+    else:
+        created = session.created_at
+    tg_id = session.initiator_telegram_id
+    if tg_id is None and user_a is not None:
+        tg_id = user_a.telegram_chat_id
+    return PremiumPaymentRow(
+        session=session,
+        user_name=(user_a.name if user_a and user_a.name else "Noma’lum"),
+        telegram_id=tg_id,
+        test_type=STAGE_LABELS.get(session.relationship_stage, str(session.relationship_stage)),
+        amount_uzs=order.amount_uzs if order else PREMIUM_PRICE_UZS,
+        created_at=created,
+        payment_status=str(status),
+        receipt_url=receipt_url,
+        receipt_label=receipt_label,
+        order=order,
+        premium_access=premium_access_granted(session),
+    )
+
+
+def list_premium_payments(db: DbSession) -> dict[str, list[PremiumPaymentRow]]:
+    """Pending first for approval queue; approved separate for history."""
+    sessions = (
+        db.query(Session)
+        .options(joinedload(Session.participants), joinedload(Session.payment_orders))
+        .filter(
+            or_(
+                Session.premium_payment_status == PremiumPaymentStatus.pending,
+                Session.premium_payment_status == PremiumPaymentStatus.approved,
+                Session.premium_payment_status == PremiumPaymentStatus.rejected,
+                Session.is_premium_unlocked.is_(True),
+            )
+        )
+        .order_by(Session.created_at.desc())
+        .all()
+    )
+
+    pending: list[PremiumPaymentRow] = []
+    approved: list[PremiumPaymentRow] = []
+    rejected: list[PremiumPaymentRow] = []
+
+    for session in sessions:
+        # Only show rows that are relevant to premium payment workflow
+        has_order = bool(session.payment_orders)
+        status = session.premium_payment_status
+        if status == PremiumPaymentStatus.pending and not has_order and not session.is_premium_unlocked:
+            # Skip untouched complete sessions that never requested premium
+            continue
+        row = build_premium_payment_row(session)
+        if row.premium_access or status == PremiumPaymentStatus.approved:
+            approved.append(row)
+        elif status == PremiumPaymentStatus.rejected:
+            rejected.append(row)
+        elif status == PremiumPaymentStatus.pending or has_order:
+            pending.append(row)
+
+    def sort_key(r: PremiumPaymentRow):
+        return r.created_at or datetime.min
+
+    pending.sort(key=sort_key, reverse=True)
+    approved.sort(key=sort_key, reverse=True)
+    rejected.sort(key=sort_key, reverse=True)
+    return {"pending": pending, "approved": approved, "rejected": rejected}

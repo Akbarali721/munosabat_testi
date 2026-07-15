@@ -78,14 +78,43 @@
     </dl>
 </section>
 
+<section class="admin-card admin-premium-section">
+    <h2>Premium to‘lov tasdiqlash</h2>
+    <dl class="admin-dl">
+        <dt>Premium</dt><dd>{{ 'Ochilgan' if detail.premium_unlocked else 'Yopiq' }}</dd>
+        <dt>To‘lov holati</dt>
+        <dd>
+            {% if detail.premium_payment_status == 'approved' %}Tasdiqlangan
+            {% elif detail.premium_payment_status == 'rejected' %}Rad etilgan
+            {% else %}Kutilmoqda (pending){% endif %}
+        </dd>
+        <dt>To‘lov order</dt><dd>{{ 'Paid' if detail.payment_paid else 'Yo‘q / demo' }}</dd>
+    </dl>
+    <div class="admin-payment-card__actions admin-detail-premium-actions">
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/approve-premium" onsubmit="return confirm('Premium tasdiqlansinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+            <button type="submit" class="admin-btn admin-btn--approve admin-btn--touch">Approve Premium</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/reject-premium" onsubmit="return confirm('To‘lov rad etilsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+            <button type="submit" class="admin-btn admin-btn--reject admin-btn--touch-sm">Reject</button>
+        </form>
+        <form method="post" action="/admin/relationship-sessions/{{ s.id }}/reblock-premium" onsubmit="return confirm('Premium qayta bloklansinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
+            <button type="submit" class="admin-btn admin-btn--touch-sm">Premiumni qayta bloklash</button>
+        </form>
+    </div>
+    <p class="admin-muted" style="margin-top:0.75rem;">
+        <a href="/admin/premium-payments{% if admin_token %}?admin_token={{ admin_token }}{% endif %}">Barcha premium to‘lovlar →</a>
+    </p>
+</section>
+
 <section class="admin-card">
     <h2>Natija</h2>
     <dl class="admin-dl">
         <dt>Umumiy natija</dt><dd>{% if detail.result_ready %}Tayyor{% else %}Tayyor emas{% endif %}</dd>
         <dt>User1 ga yuborilgan</dt><dd>{{ 'Ha' if detail.result_sent_user1 else 'Yo‘q' }}</dd>
         <dt>User2 ga yuborilgan</dt><dd>{{ 'Ha' if detail.result_sent_user2 else 'Yo‘q' }}</dd>
-        <dt>Premium</dt><dd>{{ 'Ochilgan' if detail.premium_unlocked else 'Yo‘q' }}</dd>
-        <dt>To‘lov</dt><dd>{{ 'Paid' if detail.payment_paid else 'Yo‘q / demo' }}</dd>
         <dt>PDF</dt><dd>Hozircha mavjud emas</dd>
     </dl>
 </section>
@@ -110,18 +139,23 @@
     <h2>Admin amallari</h2>
     <div class="admin-actions">
         <form method="post" action="/admin/relationship-sessions/{{ s.id }}/resend-share" onsubmit="return confirm('Share xabarini qayta yuborilsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
             <button type="submit" class="admin-btn">User1 ga yuborish tugmasini qayta jo‘natish</button>
         </form>
         <form method="post" action="/admin/relationship-sessions/{{ s.id }}/resend-result" onsubmit="return confirm('Natija qayta yuborilsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
             <button type="submit" class="admin-btn">Natijani User1 ga qayta yuborish</button>
         </form>
         <form method="post" action="/admin/relationship-sessions/{{ s.id }}/revoke-token" onsubmit="return confirm('Token bekor qilinsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
             <button type="submit" class="admin-btn admin-btn--danger">Taklif tokenini bekor qilish</button>
         </form>
         <form method="post" action="/admin/relationship-sessions/{{ s.id }}/regenerate-token" onsubmit="return confirm('Yangi token yaratilsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
             <button type="submit" class="admin-btn">Yangi token yaratish</button>
         </form>
         <form method="post" action="/admin/relationship-sessions/{{ s.id }}/cancel" onsubmit="return confirm('Sessiya bekor qilinsinmi?');">
+            {% if admin_token %}<input type="hidden" name="admin_token" value="{{ admin_token }}">{% endif %}
             <button type="submit" class="admin-btn admin-btn--danger">Sessiyani bekor qilish</button>
         </form>
     </div>

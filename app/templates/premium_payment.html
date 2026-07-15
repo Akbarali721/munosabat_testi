@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Premium to‘lov — Qadam{% endblock %}
+
+{% block body_class %}page-premium{% endblock %}
+
+{% block content %}
+<div class="qd-shell">
+    <section class="qd-premium-lock qd-animate-in">
+        <span class="qd-premium-lock__emoji" aria-hidden="true">💳</span>
+        <h1 class="qd-premium-lock__title">To‘liq tahlilni ochish</h1>
+        <p class="qd-premium-lock__lead">
+            To‘lov qabul qilingach, admin tasdiqlaydi va premium natija ochiladi.
+            Tasdiqlashdan oldin to‘liq tahlil ko‘rinmaydi.
+        </p>
+
+        <div class="qd-card qd-card--premium qd-premium-lock__card">
+            <p class="qd-premium-lock__price">{{ "{:,}".format(premium_price).replace(",", " ") }} so‘m</p>
+            <p class="qd-premium-lock__note">Bir marta to‘lov — natija ikkalangizga ochiladi.</p>
+
+            {% if request.query_params.get('requested') %}
+            <p class="qd-meta" style="color:#047857;font-weight:700;">
+                ✅ So‘rov yuborildi. Admin tasdiqlashini kuting.
+            </p>
+            {% elif request.query_params.get('paid') %}
+            <p class="qd-meta" style="color:#047857;font-weight:700;">
+                ✅ To‘lov qabul qilindi. Admin tasdiqlashidan keyin premium ochiladi.
+            </p>
+            {% endif %}
+
+            {% set status_val = payment_status.value if payment_status and payment_status.value is defined else (payment_status or 'pending') %}
+            <p class="qd-meta">
+                Holat:
+                {% if status_val == 'approved' %}
+                    Tasdiqlangan
+                {% elif status_val == 'rejected' %}
+                    Rad etilgan
+                {% else %}
+                    Kutilmoqda (pending)
+                {% endif %}
+            </p>
+
+            {% if payment_demo %}
+            <p class="qd-premium-lock__demo">
+                Demo rejim: to‘lov avtomatik ochilmaydi. «So‘rov yuborish» dan keyin admin tasdiqlashi kerak.
+            </p>
+            {% endif %}
+
+            <form method="post" action="/session/{{ session.id }}/premium/unlock">
+                <input type="hidden" name="role" value="{{ viewer_role }}">
+                <button type="submit" class="qd-btn qd-btn--primary qd-btn--full">
+                    To‘lov so‘rovini yuborish
+                </button>
+            </form>
+
+            <a href="/session/{{ session.id }}/result?role={{ viewer_role }}" class="qd-btn qd-btn--ghost qd-btn--full" style="margin-top:0.65rem;">
+                ← Natijaga qaytish
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
