@@ -15,7 +15,7 @@
         </p>
 
         <div class="qd-card qd-card--premium qd-premium-lock__card">
-            <p class="qd-premium-lock__price">{{ "{:,}".format(premium_price).replace(",", " ") }} so‘m</p>
+            <p class="qd-premium-lock__price">{{ premium_price_label }}</p>
             <p class="qd-premium-lock__note">Bir marta to‘lov — natija ikkalangizga ochiladi.</p>
 
             {% if request.query_params.get('requested') %}

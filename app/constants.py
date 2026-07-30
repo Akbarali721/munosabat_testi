@@ -2,15 +2,28 @@ from app.models import Gender, RelationshipStage
 
 SESSION_QUESTION_COUNT = 12
 
-PREMIUM_PRICE_UZS = 25_000
+PREMIUM_PRICE_UZS = 9_999
+
+
+def premium_price_label(amount_uzs: int | None = None) -> str:
+    """Foydalanuvchiga ko‘rinadigan premium narx matni."""
+    amount = PREMIUM_PRICE_UZS if amount_uzs is None else amount_uzs
+    num = f"{amount:,}".replace(",", " ")
+    return f"Boshlang‘ich narx — {num} so‘m"
 
 STAGE_LABELS = {
+    RelationshipStage.dating: "Endi tanishayapmiz",
+    RelationshipStage.newly_married: "Yaqinda oila qurdik",
     RelationshipStage.newly_meeting: "Endi tanishayotganlar",
     RelationshipStage.in_relationship: "Yangi turmush qurganlar",
     RelationshipStage.married: "Turmush qurganlar",
 }
 
 STAGE_DESCRIPTIONS = {
+    RelationshipStage.dating: "Bir-biringizni chuqurroq bilish uchun",
+    RelationshipStage.newly_married: (
+        "Oilaviy hayotdagi kutishlaringizni solishtirish uchun"
+    ),
     RelationshipStage.newly_meeting: (
         "Bir-biringizning xarakteri va qarashlarini asta-sekin bilib oling."
     ),
@@ -40,37 +53,55 @@ DIMENSION_LABELS = {
     "future_vision": "Kelajak tasavvuri",
     "respect_listening": "Tinglash va hurmat",
     "communication_initiative": "Aloqa tashabbusi",
+    "emotional_support": "Hissiy qo‘llab-quvvatlash",
+    "love_language": "Sevgi tilida ifoda",
+    "sensitivity": "Sezgirlik",
+    "communication": "Muloqot",
+    "attachment": "Bog‘lanish",
+    "trust": "Ishonch",
+    "openness": "Ochiqlik",
+    "boundaries": "Chegaralar",
+    "relationship_expectations": "Munosabat kutilmalari",
+    "emotional_needs": "Hissiy ehtiyojlar",
+    "financial_trust": "Moliyaviy ishonch",
+    "appreciation": "Qadrlanish",
+    "support": "Qo‘llab-quvvatlash",
+    "personal_boundaries": "Shaxsiy chegaralar",
+    "future_expectations": "Kelajak kutilmalari",
+    "inner_needs": "Ichki ehtiyojlar",
+    "attention_and_affection": "E’tibor va mehr",
+    "money_and_expenses": "Pul va xarajatlar",
+    "household_responsibility": "Uy ishlari",
+    "parents_and_relatives": "Ota-ona va qarindoshlar",
+    "conflict_resolution": "Kelishmovchilik",
+    "future_plans": "Kelajak rejalari",
 }
 
 SCENARIO_ORDER = [
-    "promise_call",
-    "small_attention",
-    "phone_attention",
-    "being_late",
-    "friends_plan",
-    "first_bill",
-    "different_opinion",
-    "mother_call",
-    "private_secret",
-    "future_talk",
-    "interrupting",
-    "initiative",
+    "emotional_support",
+    "love_expression",
+    "emotional_triggers",
+    "conflict_resolution",
+    "communication_frequency",
+    "emotional_safety",
+    "conflict_goal",
+    "important_dates",
+    "vulnerability",
+    "personal_space",
+    "future_vision",
+    "inner_needs",
 ]
 
-IN_RELATIONSHIP_SCENARIO_ORDER = [
-    "weekend_plan",
-    "bad_mood",
-    "social_media",
-    "money_talk",
-    "family_visit",
-    "compliment",
-    "apology",
-    "future_step",
-    "habit_change",
-    "support_day",
-    "jealousy_talk",
-    "quality_time",
-]
+IN_RELATIONSHIP_SCENARIO_ORDER = [f"newlywed_{i:02d}" for i in range(1, 13)]
+
+# API/debug alias for Yangi turmush qurganlar
+STAGE_CATEGORY_CODE = {
+    RelationshipStage.dating.value: "dating",
+    RelationshipStage.newly_married.value: "newly_married",
+    RelationshipStage.newly_meeting.value: "newly_meeting",
+    RelationshipStage.in_relationship.value: "newlywed",
+    RelationshipStage.married.value: "married",
+}
 
 MARRIED_SCENARIO_ORDER = [
     "housework",
@@ -88,12 +119,36 @@ MARRIED_SCENARIO_ORDER = [
 ]
 
 STAGE_SCENARIO_ORDER = {
+    RelationshipStage.dating.value: SCENARIO_ORDER,
+    RelationshipStage.newly_married.value: IN_RELATIONSHIP_SCENARIO_ORDER,
     RelationshipStage.newly_meeting.value: SCENARIO_ORDER,
     RelationshipStage.in_relationship.value: IN_RELATIONSHIP_SCENARIO_ORDER,
     RelationshipStage.married.value: MARRIED_SCENARIO_ORDER,
 }
 
 SCENARIO_DISPLAY_TITLES = {
+    "emotional_support": "Hissiy qo‘llab-quvvatlash",
+    "love_expression": "Sevgi ifodasi",
+    "emotional_triggers": "Ranjitadigan holatlar",
+    "conflict_resolution": "Muammoni hal qilish",
+    "communication_frequency": "Aloqa chastotasi",
+    "emotional_safety": "Xavfsizlik hissi",
+    "conflict_goal": "Kelishmovchilik maqsadi",
+    "important_dates": "Muhim sanalar",
+    "vulnerability": "Ochiq bo‘lish",
+    "personal_space": "Shaxsiy erkinlik",
+    "future_vision": "Kelajak tasavvuri",
+    "inner_needs": "Ichki ehtiyojlar",
+    "family_emotional_need": "Oiladagi ehtiyoj",
+    "household_responsibility": "Uy ishlari",
+    "family_finance": "Oilaviy moliya",
+    "silence_interpretation": "Sukut va charchoq",
+    "family_boundaries": "Oila chegaralari",
+    "feeling_appreciated": "Qadrlanish",
+    "support_during_difficulty": "Qiyin paytda yordam",
+    "family_future": "Oilaviy kelajak",
+    "hidden_emotional_need": "Yashirin ehtiyoj",
+    **{f"newlywed_{i:02d}": f"Savol {i}" for i in range(1, 13)},
     "promise_call": "🕗 20:00 da qo‘ng‘iroq",
     "small_attention": "☕ Qahvani eslab qoldi",
     "phone_attention": "📱 Telefoniga qarayverdi",
@@ -133,6 +188,8 @@ SCENARIO_DISPLAY_TITLES = {
 }
 
 STAGE_ICONS = {
+    RelationshipStage.dating: "🌱",
+    RelationshipStage.newly_married: "💍",
     RelationshipStage.newly_meeting: "🌱",
     RelationshipStage.in_relationship: "💞",
     RelationshipStage.married: "💍",
@@ -227,7 +284,13 @@ FOOTER_QUOTES = [
 RESULT_DIMENSION_GROUPS = {
     "trust": {
         "label": "Ishonch",
-        "dimensions": ["responsibility_trust", "trust_privacy"],
+        "dimensions": [
+            "responsibility_trust",
+            "trust_privacy",
+            "trust",
+            "emotional_safety",
+            "financial_trust",
+        ],
     },
     "communication": {
         "label": "Muloqot",
@@ -236,11 +299,23 @@ RESULT_DIMENSION_GROUPS = {
             "conflict_style",
             "respect_listening",
             "attention",
+            "communication",
+            "attachment",
+            "silence_interpretation",
+            "love_language",
+            "emotional_support",
+            "sensitivity",
+            "openness",
         ],
     },
     "future": {
         "label": "Kelajak",
-        "dimensions": ["future_vision"],
+        "dimensions": [
+            "future_vision",
+            "future_expectations",
+            "relationship_expectations",
+            "family_future",
+        ],
     },
     "respect": {
         "label": "Hurmat",
@@ -250,15 +325,22 @@ RESULT_DIMENSION_GROUPS = {
             "priority_time",
             "money_values",
             "family_values",
+            "boundaries",
+            "family_boundaries",
+            "personal_boundaries",
+            "appreciation",
+            "support",
+            "emotional_needs",
+            "inner_needs",
         ],
     },
 }
 
 LOADING_MESSAGES = [
-    "Javoblaringiz tahlil qilinmoqda...",
+    "Javoblaringiz saqlanmoqda...",
     "Bir oz sabr — bu bir daqiqadan kam vaqt oladi",
-    "Hayotiy vaziyatlar solishtirilmoqda...",
-    "Natija tayyorlanmoqda...",
+    "Vaziyatlar juftingiz bilan solishtirish uchun tayyorlanmoqda...",
+    "Keyingi qadamga o‘tilmoqda...",
 ]
 
 PREMIUM_MAP_DIMENSIONS: dict[str, dict[str, object]] = {

@@ -1,22 +1,22 @@
 /* Qadam landing — old love-app language, modernized */
 
 .page-landing {
-    --love-bg: #eef3ff;
-    --love-ink: #24133f;
-    --love-muted: #7a6f92;
-    --love-primary: #7c3aed;
-    --love-primary-dark: #5b21b6;
-    --love-primary-soft: #f0e7ff;
-    --love-border: #eadff8;
-    --love-shadow: 0 18px 45px rgb(89 54 149 / 0.14);
+    --love-bg: #f5efe6;
+    --love-ink: #2a241c;
+    --love-muted: #7a7062;
+    --love-primary: #8b6914;
+    --love-primary-dark: #6b5010;
+    --love-primary-soft: #f5ecd8;
+    --love-border: #e8dcc8;
+    --love-shadow: 0 18px 45px rgb(80 60 30 / 0.12);
 
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     color: var(--love-ink);
     min-height: 100vh;
     background:
-        radial-gradient(circle at 15% 8%, #ffe1ef 0, transparent 28%),
-        radial-gradient(circle at 90% 0%, #dbe8ff 0, transparent 32%),
-        linear-gradient(180deg, #f6efff 0%, var(--love-bg) 48%, #f8fbff 100%);
+        radial-gradient(circle at 15% 8%, #f0e6d8 0, transparent 28%),
+        radial-gradient(circle at 90% 0%, #ebe3d4 0, transparent 32%),
+        linear-gradient(180deg, #faf6f0 0%, var(--love-bg) 48%, #faf8f4 100%);
 }
 
 .page-landing .qd-header,
@@ -87,10 +87,18 @@
     color: var(--love-primary);
 }
 
+.landing-tagline {
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--love-muted);
+}
+
 /* Left-aligned hero */
 .landing-hero {
     text-align: left;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .landing-kicker {
@@ -112,6 +120,14 @@
     line-height: 1.08;
     letter-spacing: -0.04em;
     color: var(--love-ink);
+    text-wrap: balance;
+}
+
+.landing-desc {
+    margin: 0.85rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.58;
+    color: var(--love-muted);
 }
 
 .landing-lead {
@@ -174,7 +190,8 @@
 
 /* Big gradient CTA */
 .landing-cta-block {
-    margin-bottom: 18px;
+    margin-top: 4px;
+    margin-bottom: 22px;
 }
 
 .btn-landing {
@@ -190,8 +207,8 @@
     font-weight: 800;
     color: #fff;
     text-decoration: none;
-    background: linear-gradient(135deg, #8b5cf6, var(--love-primary));
-    box-shadow: 0 12px 24px rgb(124 58 237 / 0.28);
+    background: linear-gradient(135deg, #a67c1a, var(--love-primary));
+    box-shadow: 0 12px 24px rgb(107 80 16 / 0.22);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -243,11 +260,11 @@
 
 .how-step {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     padding: 10px 12px;
     border-radius: 16px;
-    background: #faf7ff;
+    background: #faf6f0;
 }
 
 .how-num {
@@ -264,12 +281,23 @@
     font-weight: 800;
 }
 
+.how-step-copy {
+    min-width: 0;
+}
+
+.how-step-title {
+    margin: 0 0 2px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--love-ink);
+}
+
 .how-text {
     margin: 0;
-    font-size: 0.88rem;
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--love-ink);
+    font-size: 0.84rem;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--love-muted);
 }
 
 .landing-footer-quote {

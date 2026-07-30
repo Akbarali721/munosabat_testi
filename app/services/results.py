@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.constants import DIMENSION_LABELS, RESULT_DIMENSION_GROUPS
 from app.copy.result_free import warmth_summary
-from app.models import Participant, ParticipantRole, ScenarioQuestion, Session
+from app.models import Participant, ParticipantRole, RelationshipStage, ScenarioQuestion, Session
+from app.services.pair_narrative import option_value_for_choice, pair_comparison_line
+from app.services.relationship_stage import question_bank_stage, uses_pair_narrative
 from app.services.scenarios import get_option_text, question_text_for_display
 
 
@@ -20,6 +22,7 @@ class ScenarioComparison:
     difference: int
     user_a_prompt: str
     user_b_prompt: str
+    insight_line: str = ""
 
 
 @dataclass
@@ -82,6 +85,9 @@ def _suggestion_for_gap(
     name_a: str,
     name_b: str,
 ) -> str:
+    if comparison.insight_line:
+        return comparison.insight_line
+
     if comparison.difference <= 1:
         return ""
 
@@ -110,6 +116,7 @@ def build_session_result(db: DbSession, session: Session) -> SessionResult | Non
         return None
 
     comparisons: list[ScenarioComparison] = []
+    bank_stage = question_bank_stage(session.relationship_stage)
     for scenario_id in sorted(answers_a.keys(), key=lambda sid: sid):
         if scenario_id not in answers_b:
             continue
@@ -125,7 +132,7 @@ def build_session_result(db: DbSession, session: Session) -> SessionResult | Non
             .filter(
                 ScenarioQuestion.scenario_id == scenario_id,
                 ScenarioQuestion.gender == user_a.gender,
-                ScenarioQuestion.stage == session.relationship_stage,
+                ScenarioQuestion.stage == bank_stage,
             )
             .first()
         )
@@ -134,12 +141,25 @@ def build_session_result(db: DbSession, session: Session) -> SessionResult | Non
             .filter(
                 ScenarioQuestion.scenario_id == scenario_id,
                 ScenarioQuestion.gender == user_b.gender,
-                ScenarioQuestion.stage == session.relationship_stage,
+                ScenarioQuestion.stage == bank_stage,
             )
             .first()
         )
 
         dimension = a_question.dimension if a_question else ""
+        value_a = option_value_for_choice(a_question, a_answer.choice_index)
+        value_b = option_value_for_choice(b_question, b_answer.choice_index)
+        insight = ""
+        stage = session.relationship_stage
+        if uses_pair_narrative(stage):
+            insight = pair_comparison_line(
+                stage,
+                scenario_id,
+                value_a,
+                value_b,
+                user_a.name,
+                user_b.name,
+            )
         comparisons.append(
             ScenarioComparison(
                 scenario_id=scenario_id,
@@ -164,6 +184,7 @@ def build_session_result(db: DbSession, session: Session) -> SessionResult | Non
                 user_b_prompt=question_text_for_display(b_question, user_b.gender)
                 if b_question
                 else "",
+                insight_line=insight,
             )
         )
 

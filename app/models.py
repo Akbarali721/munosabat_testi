@@ -30,6 +30,8 @@ def _str_enum(enum_cls: type[enum.Enum]):
 
 
 class RelationshipStage(str, enum.Enum):
+    dating = "dating"
+    newly_married = "newly_married"
     newly_meeting = "newly_meeting"
     in_relationship = "in_relationship"
     married = "married"

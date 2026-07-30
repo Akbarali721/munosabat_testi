@@ -155,7 +155,7 @@ class ResultNotifyInitiatorTests(unittest.TestCase):
                 f"/session/{session.id}/result",
                 first.kwargs.get("web_app_url", ""),
             )
-            self.assertEqual(first.kwargs.get("button_text"), "📊 Natijani ko‘rish")
+            self.assertEqual(first.kwargs.get("button_text"), "💬 Natijani ko‘rish")
 
     def test_initiator_notified_even_if_participant_chat_empty(self):
         session = self._complete_session()

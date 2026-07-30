@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Hayotiy vaziyatlar — Qadam{% endblock %}
+{% block title %}Juftlik suhbati{% endblock %}
 
 {% block body_class %}page-quiz{% endblock %}
 
@@ -11,14 +11,17 @@
         <span class="qd-empty__emoji" aria-hidden="true">🚧</span>
         <h1 class="qd-empty__title">Bu bosqich ustida ishlayapmiz</h1>
         <p class="qd-empty__text">
-            Bu bosqich uchun savollar hozircha mavjud emas. Boshidan boshlang yoki boshqa bosqichni tanlang.
+            Bu bosqich uchun savollar hozircha mavjud emas. Boshqa bosqichni tanlang yoki keyinroq qaytib keling.
         </p>
-        <a href="/start" class="qd-btn qd-btn--primary">Boshidan boshlash</a>
+        <a href="/start" class="qd-btn qd-btn--primary">Suhbatni boshlash</a>
     </section>
     {% else %}
+    <p class="qd-quiz-helper qd-animate-in">
+        O‘zingizga eng yaqin javobni tanlang. Bu yerda to‘g‘ri yoki noto‘g‘ri javob yo‘q.
+    </p>
     <div class="qd-progress qd-animate-in" id="quiz-progress">
         <div class="qd-progress__row">
-            <span class="qd-progress__label" id="quiz-progress-label">Savol 1/{{ question_count }}</span>
+            <span class="qd-progress__label" id="quiz-progress-label">1 / {{ question_count }}</span>
             <span class="qd-progress__pct" id="quiz-progress-pct">8%</span>
         </div>
         <div class="qd-progress__track">
@@ -31,6 +34,7 @@
         action="/session/{{ session.id }}/questions"
         id="quiz-form"
         class="qd-quiz-form"
+        data-question-total="{{ question_count }}"
     >
         <input type="hidden" name="role" value="{{ role }}">
         <input type="hidden" name="init_data" id="init_data" value="">

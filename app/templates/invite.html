@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Birinchi qism tayyor — Qadam{% endblock %}
+{% block title %}Sizning qismingiz tayyor — Juftlik suhbati{% endblock %}
 
 {% block body_class %}page-invite{% endblock %}
 
@@ -8,38 +8,34 @@
 <div class="qd-shell">
     <section class="qd-invite qd-animate-in">
         <span class="qd-invite__emoji" aria-hidden="true">✅</span>
-        <h1 class="qd-invite__title">Birinchi qism tayyor</h1>
+        <h1 class="qd-invite__title">Sizning qismingiz tayyor</h1>
         <p class="qd-invite__subtitle">
-            Endi sherigingiz ham testni ishlashi kerak. Sizga Telegram bot orqali
-            yuborish tugmasini jo‘natdik.
+            Endi javoblaringizni solishtirish uchun Juftlik suhbatini turmush o‘rtog‘ingizga yuboring.
         </p>
 
         <div class="qd-progress-steps" role="list">
             <div class="qd-progress-step qd-progress-step--done" role="listitem">
                 <span class="qd-progress-step__icon" aria-hidden="true">✅</span>
-                <span>Siz — testni tugatdingiz</span>
+                <span>Siz — 12 ta vaziyatga javob berdingiz</span>
             </div>
             <div class="qd-progress-step qd-progress-step--wait" role="listitem">
                 <span class="qd-progress-step__icon" aria-hidden="true">⏳</span>
-                <span>Sherigingiz — javobini kutyapmiz</span>
+                <span>Juftingiz — javobini kutyapmiz</span>
             </div>
         </div>
 
         <div class="qd-invite-actions">
-            {% if telegram_share_url %}
-            <a
+            {% if invite_deep_link %}
+            <button
+                type="button"
                 class="qd-btn qd-btn--telegram qd-btn--full qd-invite-share"
-                href="{{ telegram_share_url }}"
-                target="_blank"
-                rel="noopener"
                 id="invite-share-btn"
             >
-                💌 Havolani ulashish
-            </a>
+                Juftimga yuborish
+            </button>
             {% else %}
             <p class="qd-meta qd-invite__notice">
-                Ulashish havolasini tayyorlab bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring
-                yoki Telegram botdagi xabarni tekshiring.
+                Ulashish havolasini tayyorlab bo‘lmadi. Iltimos, birozdan so‘ng qayta urinib ko‘ring.
             </p>
             {% endif %}
 
@@ -47,18 +43,14 @@
                 class="qd-btn qd-btn--secondary qd-btn--full"
                 href="/session/{{ session.id }}/status"
             >
-                ⏳ Test holatini ko‘rish
+                Holatni ko‘rish
             </a>
-
-            <button type="button" class="qd-btn qd-btn--ghost qd-btn--full" id="invite-close-btn">
-                Telegramga qaytish
-            </button>
         </div>
 
         <p class="qd-meta qd-invite__footer">
-            Asosiy yuborish tugmasi bot chatida ham bor — «💌 Sherikka yuborish».
-            Sherigingiz testni tugatgach, natija Telegram orqali ikkalangizga yuboriladi.
+            Natija juftingiz ham savollarga javob bergandan keyin tayyor bo‘ladi.
         </p>
+        <p class="qd-meta" id="invite-toast" role="status" aria-live="polite" hidden></p>
     </section>
 </div>
 {% endblock %}
@@ -73,15 +65,62 @@
         tg.ready();
         tg.expand();
     }
-    var closeBtn = document.getElementById("invite-close-btn");
-    if (closeBtn) {
-        closeBtn.addEventListener("click", function () {
-            if (tg && typeof tg.close === "function") {
-                tg.close();
-            } else {
-                window.location.href = "https://t.me/{{ bot_username or 'qadam_loyihaBot' }}";
+
+    var inviteLink = {{ invite_deep_link | tojson }};
+    var shareText = {{ invite_share_text | tojson }};
+    var shareBtn = document.getElementById("invite-share-btn");
+    var toast = document.getElementById("invite-toast");
+
+    function showToast(message) {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.hidden = false;
+        setTimeout(function () {
+            toast.hidden = true;
+        }, 3200);
+    }
+
+    async function shareInvite() {
+        if (!inviteLink) return;
+
+        var shareUrl =
+            "https://t.me/share/url?url=" +
+            encodeURIComponent(inviteLink) +
+            "&text=" +
+            encodeURIComponent(shareText);
+
+        try {
+            if (tg && typeof tg.openTelegramLink === "function") {
+                tg.openTelegramLink(shareUrl);
+                return;
             }
-        });
+            if (navigator.share) {
+                await navigator.share({
+                    title: "Juftlik suhbati",
+                    text: shareText,
+                    url: inviteLink,
+                });
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(inviteLink);
+                showToast("Havola nusxalandi.");
+                return;
+            }
+            window.prompt("Havolani nusxalang:", inviteLink);
+        } catch (err) {
+            if (err && err.name === "AbortError") return;
+            try {
+                await navigator.clipboard.writeText(inviteLink);
+                showToast("Havola nusxalandi.");
+            } catch (copyErr) {
+                window.prompt("Havolani nusxalang:", inviteLink);
+            }
+        }
+    }
+
+    if (shareBtn) {
+        shareBtn.addEventListener("click", shareInvite);
     }
 })();
 </script>

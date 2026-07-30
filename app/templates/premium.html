@@ -26,7 +26,7 @@
         </ul>
 
         <div class="qd-card qd-card--premium qd-premium-lock__card">
-            <p class="qd-premium-lock__price">{{ "{:,}".format(premium_price).replace(",", " ") }} so‘m</p>
+            <p class="qd-premium-lock__price">{{ premium_price_label }}</p>
             <p class="qd-premium-lock__note">{{ paywall_tagline }}</p>
             {% if payment_demo %}
             <p class="qd-premium-lock__demo">Demo rejim: avtomatik ochilmaydi. To‘lov so‘rovidan keyin admin tasdiqlashi kerak.</p>
@@ -78,7 +78,7 @@
 
         <section class="qd-card qd-card--premium qd-premium-section" data-premium-section>
             <span class="qd-premium-section__emoji" aria-hidden="true">🗺️</span>
-            <h2 class="qd-section-title">Bir-biringizni yaxshiroq tushunish xaritasi</h2>
+            <h2 class="qd-section-title">Bir-biringizni yaxshiroq tushunish</h2>
             <p class="qd-warm-text">{{ premium.map_intro }}</p>
             <div class="qd-map-list">
                 {% for item in premium.map_items %}

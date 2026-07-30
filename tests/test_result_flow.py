@@ -121,8 +121,8 @@ class ResultExperienceUnitTests(unittest.TestCase):
             result, viewer=viewer, stage_label="Yangi turmush qurganlar", premium_unlocked=False
         )
         self.assertEqual(len(exp.free_blocks), 4)
-        self.assertEqual(exp.free_blocks[0].title, "Sizlarning kuchli tomoningiz")
-        self.assertEqual(exp.free_blocks[1].title, "Qarashlaringiz farq qiladigan nuqta")
+        self.assertEqual(exp.free_blocks[0].title, "Bir xil qarashlaringiz")
+        self.assertEqual(exp.free_blocks[1].title, "Farqli kutishlaringiz")
         self.assertIn("Akbarali", exp.personal_body)
         self.assertEqual(len(exp.premium_blocks), 7)
         self.assertTrue(all(b.locked for b in exp.premium_blocks))
@@ -380,11 +380,12 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         for telegram_id in (1001, 2002):
             response = self._get_result(session.id, telegram_id)
             self.assertEqual(response.status_code, 200, telegram_id)
-            self.assertIn("Sizlarning munosabat tahlili tayyor", response.text)
-            self.assertIn("Davom etish", response.text)
-            self.assertIn("Sizlarning kuchli tomoningiz", response.text)
+            self.assertIn("Sizning suhbat natijangiz", response.text)
+            self.assertIn("Natijani ko‘rish", response.text)
+            self.assertIn("Bir xil qarashlaringiz", response.text)
             self.assertIn("Sizlarning to‘liq tahlilingiz tayyor", response.text)
-            self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", response.text)
+            self.assertIn("Chuqurroq tahlilni ochish", response.text)
+            self.assertIn("Boshlang‘ich narx — 9 999 so‘m", response.text)
 
     def test_personal_block_matches_viewer(self):
         session = self._create_complete_session()
@@ -400,11 +401,11 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         locked = self._get_result(locked_session.id, 1001)
         unlocked = self._get_result(unlocked_session.id, 2002)
 
-        self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", locked.text)
+        self.assertIn("Chuqurroq tahlilni ochish", locked.text)
         self.assertIn("qd-result-premium--locked", locked.text)
         self.assertIn("/premium/payment", locked.text)
-        self.assertNotIn("To‘liq tahlilni ikkalangiz uchun ochish", unlocked.text)
-        self.assertIn("To‘liq tahlil ochilgan", unlocked.text)
+        self.assertNotIn("Chuqurroq tahlilni ochish", unlocked.text)
+        self.assertIn("Chuqurroq tahlil ochilgan", unlocked.text)
 
     def test_unlock_request_does_not_open_premium(self):
         session = self._create_complete_session(premium=False)
@@ -426,8 +427,8 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
 
         for telegram_id in (1001, 2002):
             page = self._get_result(session.id, telegram_id)
-            self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", page.text)
-            self.assertNotIn("To‘liq tahlil ochilgan", page.text)
+            self.assertIn("Chuqurroq tahlilni ochish", page.text)
+            self.assertNotIn("Chuqurroq tahlil ochilgan", page.text)
 
     def test_second_unlock_request_while_pending(self):
         session = self._create_complete_session(premium=False)
@@ -445,7 +446,7 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         self.assertIn("/premium/payment", again.headers["location"])
         page = self._get_result(session.id, 1001)
         self.assertEqual(page.status_code, 200)
-        self.assertIn("To‘liq tahlilni ikkalangiz uchun ochish", page.text)
+        self.assertIn("Chuqurroq tahlilni ochish", page.text)
 
     def test_already_approved_unlock_goes_to_premium(self):
         session = self._create_complete_session(premium=True)
@@ -460,7 +461,6 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
 
     def test_invite_shows_share_when_partner_pending(self):
         session = self._create_complete_session()
-        # Mark partner incomplete so invite page is shown
         user_b = (
             self.db.query(Participant)
             .filter_by(session_id=session.id, role=ParticipantRole.user_b)
@@ -468,6 +468,9 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         )
         user_b.completed_at = None
         session.status = SessionStatus.awaiting_user_b_answers
+        from app.services.invite_token import ensure_invite_token
+
+        token = ensure_invite_token(self.db, session)
         self.db.commit()
         with (
             patch("app.routers.pages.get_settings") as mock_pages_settings,
@@ -475,14 +478,17 @@ class ResultAccessIntegrationTests(InMemoryDbMixin, unittest.TestCase):
         ):
             for mock_settings in (mock_pages_settings, mock_share_settings):
                 settings = mock_settings.return_value
-                settings.telegram_bot_username = "bot"
-                settings.resolve_bot_username.return_value = "bot"
+                settings.telegram_bot_username = "munosabat_testBot"
+                settings.resolve_bot_username.return_value = "munosabat_testBot"
                 settings.webapp_base_url = "https://app.example"
-            response = self.client.get(f"/invite/{session.id}", follow_redirects=False)
+            response = self.client.get(
+                f"/relationship/session/{token}/invite",
+                follow_redirects=False,
+            )
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Birinchi qism tayyor", response.text)
-        self.assertIn("Havolani ulashish", response.text)
-        self.assertIn("Test holatini ko‘rish", response.text)
+        self.assertIn("Sizning qismingiz tayyor", response.text)
+        self.assertIn("Juftimga yuborish", response.text)
+        self.assertIn("Holatni ko‘rish", response.text)
 
     def test_scoring_unchanged_by_experience_layer(self):
         session = self._create_complete_session(weight_a=4, weight_b=1)

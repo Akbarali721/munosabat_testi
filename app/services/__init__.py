@@ -7,7 +7,7 @@ from app.database import engine
 from app.models import Answer, Gender, RelationshipStage, ScenarioQuestion
 from app.question_seeds import ALL_QUESTIONS
 
-QUESTION_SCHEMA_VERSION = 3
+QUESTION_SCHEMA_VERSION = 5
 
 
 def _needs_schema_reset() -> bool:
@@ -27,13 +27,52 @@ def reset_question_schema() -> None:
     Answer.__table__.create(engine, checkfirst=True)
 
 
+def _active_scenario_ids_by_stage() -> dict[str, set[str]]:
+    by_stage: dict[str, set[str]] = {}
+    for item in ALL_QUESTIONS:
+        by_stage.setdefault(item["stage"], set()).add(item["scenario_id"])
+    return by_stage
+
+
+def purge_orphan_questions(
+    db: DbSession,
+    stage: RelationshipStage,
+    active_scenario_ids: set[str],
+) -> None:
+    if not active_scenario_ids:
+        return
+    candidates = (
+        db.query(ScenarioQuestion)
+        .filter(
+            ScenarioQuestion.stage == stage,
+            ScenarioQuestion.scenario_id.notin_(active_scenario_ids),
+        )
+        .all()
+    )
+    for question in candidates:
+        linked = (
+            db.query(Answer.id)
+            .filter(Answer.scenario_question_id == question.id)
+            .first()
+        )
+        if linked:
+            continue
+        db.delete(question)
+
+
 def seed_scenarios(db: DbSession) -> None:
     reset_question_schema()
 
     for item in ALL_QUESTIONS:
         stage = RelationshipStage(item["stage"])
         gender = Gender(item["gender_target"])
-        options_json = json.dumps(item["options"], ensure_ascii=False)
+        options_payload: dict | list = item["options"]
+        if item.get("question_code"):
+            options_payload = {
+                "question_code": item["question_code"],
+                "options": item["options"],
+            }
+        options_json = json.dumps(options_payload, ensure_ascii=False)
 
         existing = (
             db.query(ScenarioQuestion)
@@ -59,5 +98,13 @@ def seed_scenarios(db: DbSession) -> None:
                     options_json=options_json,
                 )
             )
+
+    active_by_stage = _active_scenario_ids_by_stage()
+    for stage_value, scenario_ids in active_by_stage.items():
+        if stage_value in (
+            RelationshipStage.newly_meeting.value,
+            RelationshipStage.in_relationship.value,
+        ):
+            purge_orphan_questions(db, RelationshipStage(stage_value), scenario_ids)
 
     db.commit()

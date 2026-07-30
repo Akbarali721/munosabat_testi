@@ -112,7 +112,7 @@ async def _send_welcome_with_start(chat_id: int) -> None:
     await telegram_client.send_message(
         chat_id,
         telegram_welcome(),
-        button_text="❤️ Munosabat testini boshlash",
+        button_text="💬 Juftlik suhbatini boshlash",
         web_app_url=start_url,
     )
 
@@ -164,7 +164,7 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
             await telegram_client.send_message(
                 chat_id,
                 invite_session_complete(),
-                button_text="📊 Natijani ko‘rish",
+                button_text="💬 Natijani ko‘rish",
                 web_app_url=_result_webapp_url(session.id),
             )
             return
@@ -180,14 +180,14 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
             await telegram_client.send_message(
                 chat_id,
                 invite_session_complete(),
-                button_text="📊 Natijani ko‘rish",
+                button_text="💬 Natijani ko‘rish",
                 web_app_url=_result_webapp_url(session.id),
             )
             return
         await telegram_client.send_message(
             chat_id,
             invite_partner_continue(),
-            button_text="❤️ Testni boshlash",
+            button_text="▶️ O‘z qismimni boshlash",
             web_app_url=_partner_entry_url(session.id),
         )
         return
@@ -247,7 +247,7 @@ async def _handle_rel_invite(chat_id: int, token: str, db: DbSession) -> None:
     await telegram_client.send_message(
         chat_id,
         invite_partner_welcome(),
-        button_text="❤️ Testni boshlash",
+        button_text="▶️ O‘z qismimni boshlash",
         web_app_url=_partner_entry_url(session.id),
     )
     log_relationship_event(

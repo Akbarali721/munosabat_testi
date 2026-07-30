@@ -287,7 +287,7 @@ async def _send_one_result(
         sent = await telegram_client.send_message(
             chat_id,
             text,
-            button_text="📊 Natijani ko‘rish",
+            button_text="💬 Natijani ko‘rish",
             web_app_url=result_url,
         )
     except Exception:

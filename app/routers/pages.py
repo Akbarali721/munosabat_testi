@@ -25,10 +25,12 @@ from app.constants import (
     GENDER_LABELS,
     LOADING_MESSAGES,
     PREMIUM_PRICE_UZS,
+    premium_price_label,
     SCENARIO_CLOSINGS,
     SCENARIO_CLOSINGS_MALE,
     SCENARIO_DISPLAY_TITLES,
     SESSION_QUESTION_COUNT,
+    STAGE_CATEGORY_CODE,
     STAGE_ICONS,
     STAGE_LABELS,
     STAGE_DESCRIPTIONS,
@@ -44,9 +46,10 @@ from app.services.payment import payment_page_url, premium_access_granted
 from app.services.premium import build_premium_result_copy
 from app.services.result_experience import build_result_experience
 from app.services.results import build_session_result
-from app.services.invite_token import ensure_invite_token
+from app.services.invite_token import ensure_invite_token, get_session_by_invite_token
 from app.services.invite_share import (
     PARTNER_SHARE_TEXT,
+    RELATIONSHIP_BOT_USERNAME,
     build_partner_deep_link,
     build_telegram_share_url,
 )
@@ -63,9 +66,11 @@ from app.services.scenarios import (
     get_option_weight,
     get_questions_for_participant,
     parse_options,
+    question_codes_for_questions,
     question_text_for_display,
     questions_ready,
 )
+from app.services.relationship_stage import START_FORM_STAGES, is_allowed_start_stage
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
@@ -80,6 +85,54 @@ def _get_session_or_404(db: DbSession, session_id: str) -> Session:
 
 def _participant_by_role(session: Session, role: ParticipantRole) -> Participant | None:
     return next((p for p in session.participants if p.role == role), None)
+
+
+def _session_status_debug(status: SessionStatus) -> str:
+    if status == SessionStatus.awaiting_user_b:
+        return "waiting_for_partner"
+    if status == SessionStatus.awaiting_user_b_answers:
+        return "partner_in_progress"
+    if status == SessionStatus.complete:
+        return "completed"
+    return status.value
+
+
+def _invite_page_url(token: str) -> str:
+    return f"/relationship/session/{token}/invite"
+
+
+def _log_session_completion(
+    *,
+    session: Session,
+    participant: Participant,
+    participant_role: ParticipantRole,
+    telegram_id: int | None,
+    redirect_url: str,
+    invite_link: str | None = None,
+    answer_count: int = 0,
+) -> None:
+    user_a = _participant_by_role(session, ParticipantRole.user_a)
+    user_b = _participant_by_role(session, ParticipantRole.user_b)
+    answer_count = (
+        answer_count
+        if answer_count
+        else (len(participant.answers) if participant.answers else 0)
+    )
+    logger.info(
+        "session.completion session_token=%s session_id=%s respondent_role=%s "
+        "telegram_user_id=%s answer_count=%s respondent_1_completed=%s "
+        "respondent_2_completed=%s session_status=%s redirect_url=%s invite_link=%s",
+        session.invite_token,
+        session.id,
+        participant_role.value,
+        telegram_id,
+        answer_count,
+        bool(user_a and user_a.completed_at),
+        bool(user_b and user_b.completed_at),
+        _session_status_debug(session.status),
+        redirect_url,
+        invite_link,
+    )
 
 
 def _render(
@@ -120,7 +173,7 @@ def _try_validate_init_data(
 
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return _render(request, "index.html", {"title": "Qadam — Munosabat tahlili"})
+    return _render(request, "index.html", {"title": "Juftlik suhbati"})
 
 
 @router.get("/start", response_class=HTMLResponse)
@@ -129,8 +182,8 @@ def start_form(request: Request):
         request,
         "start.html",
         {
-            "title": "Tahlilni boshlash",
-            "stages": RelationshipStage,
+            "title": "Juftlik suhbati — boshlash",
+            "start_stages": START_FORM_STAGES,
             "stage_labels": STAGE_LABELS,
             "stage_icons": STAGE_ICONS,
             "stage_descriptions": STAGE_DESCRIPTIONS,
@@ -159,6 +212,12 @@ async def start_session(
             telegram_username = tg_user.username
     except TelegramAuthError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    if not is_allowed_start_stage(relationship_stage):
+        raise HTTPException(
+            status_code=400,
+            detail="Faqat «Endi tanishayapmiz» yoki «Yaqinda oila qurdik» tanlanishi mumkin.",
+        )
 
     session = Session(relationship_stage=relationship_stage)
     if anniversary_date and anniversary_date.strip():
@@ -211,7 +270,9 @@ def questions_form(
 
     if participant.completed_at:
         if participant_role == ParticipantRole.user_a:
-            return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
+            token = ensure_invite_token(db, session)
+            db.commit()
+            return RedirectResponse(url=_invite_page_url(token), status_code=303)
         return RedirectResponse(
             url=f"/session/{session_id}/waiting",
             status_code=303,
@@ -241,17 +302,30 @@ def questions_form(
             }
         )
 
+    display_count = len(questions_view) if ready else SESSION_QUESTION_COUNT
+
+    category_code = STAGE_CATEGORY_CODE.get(session.relationship_stage.value, session.relationship_stage.value)
+    question_codes = question_codes_for_questions(questions) if questions else []
+    logger.info(
+        "questions.load category=%s respondent_gender=%s role=%s question_count=%s question_codes=%s",
+        category_code,
+        participant.gender.value,
+        participant_role.value,
+        len(questions),
+        question_codes,
+    )
+
     return _render(
         request,
         "questions.html",
         {
-            "title": "Hayotiy vaziyatlar",
+            "title": "Juftlik suhbati",
             "session": session,
             "participant": participant,
             "role": role,
             "questions": questions_view,
             "questions_ready": ready,
-            "question_count": SESSION_QUESTION_COUNT,
+            "question_count": display_count,
             "stage_labels": STAGE_LABELS,
             "scenario_titles": SCENARIO_DISPLAY_TITLES,
             "loading_messages": LOADING_MESSAGES,
@@ -284,7 +358,9 @@ async def submit_answers(
     # Idempotent: already completed
     if participant.completed_at:
         if participant_role == ParticipantRole.user_a:
-            return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
+            token = ensure_invite_token(db, session)
+            db.commit()
+            return RedirectResponse(url=_invite_page_url(token), status_code=303)
         return RedirectResponse(url=f"/session/{session_id}/waiting", status_code=303)
 
     telegram_id = None
@@ -345,7 +421,7 @@ async def submit_answers(
     if participant_role == ParticipantRole.user_a:
         set_initiator_telegram_id(session, telegram_id)
         session.status = SessionStatus.awaiting_user_b
-        ensure_invite_token(db, session)
+        token = ensure_invite_token(db, session)
         log_relationship_event(
             db,
             session_id=session_id,
@@ -353,12 +429,41 @@ async def submit_answers(
             telegram_id=telegram_id or session.initiator_telegram_id,
         )
         db.commit()
+        db.refresh(session)
+        invite_link = build_partner_deep_link(token)
+        redirect_url = _invite_page_url(token)
+        _log_session_completion(
+            session=session,
+            participant=participant,
+            participant_role=participant_role,
+            telegram_id=telegram_id,
+            redirect_url=redirect_url,
+            invite_link=invite_link,
+            answer_count=len(questions),
+        )
         background_tasks.add_task(notify_initiator_answers_saved, session_id)
-        return RedirectResponse(url=f"/invite/{session_id}", status_code=303)
+        return RedirectResponse(url=redirect_url, status_code=303)
 
     set_partner_telegram_id(session, telegram_id)
     db.commit()
-    complete_partner_session(db, session_id)
+    became_complete = complete_partner_session(db, session_id)
+    db.refresh(session)
+    redirect_url = f"/session/{session_id}/waiting"
+    _log_session_completion(
+        session=session,
+        participant=participant,
+        participant_role=participant_role,
+        telegram_id=telegram_id,
+        redirect_url=redirect_url,
+        answer_count=len(questions),
+    )
+    if became_complete:
+        logger.info(
+            "session.completion both_done session_token=%s session_id=%s session_status=%s",
+            session.invite_token,
+            session.id,
+            _session_status_debug(session.status),
+        )
     # Always attempt notifications; send_result_notifications is idempotent per participant
     background_tasks.add_task(
         send_result_notifications,
@@ -385,48 +490,70 @@ def waiting_page(
     return _render(request, "waiting.html", {"title": "Javoblar qabul qilindi", "session": session})
 
 
-@router.get("/invite/{session_id}", response_class=HTMLResponse)
-def invite_page(
-    request: Request,
-    session_id: str,
-    db: DbSession = Depends(get_db),
-):
+@router.get("/invite/{session_id}")
+def invite_page_legacy(session_id: str, db: DbSession = Depends(get_db)):
+    """Legacy URL — redirect to token-based invite page."""
     session = _get_session_or_404(db, session_id)
     user_a = _participant_by_role(session, ParticipantRole.user_a)
-
     if not user_a or not user_a.completed_at:
         return RedirectResponse(
             url=f"/session/{session_id}/questions?role=user_a",
             status_code=303,
         )
-
     token = ensure_invite_token(db, session)
     db.commit()
-    db.refresh(session)
+    return RedirectResponse(url=_invite_page_url(token), status_code=303)
+
+
+@router.get("/relationship/session/{token}/invite", response_class=HTMLResponse)
+def relationship_invite_page(
+    request: Request,
+    token: str,
+    db: DbSession = Depends(get_db),
+):
+    session = get_session_by_invite_token(db, token)
+    if not session:
+        raise HTTPException(status_code=404, detail="Taklif havolasi topilmadi")
+
+    user_a = _participant_by_role(session, ParticipantRole.user_a)
+    user_b = _participant_by_role(session, ParticipantRole.user_b)
+
+    if not user_a or not user_a.completed_at:
+        return RedirectResponse(
+            url=f"/session/{session.id}/questions?role=user_a",
+            status_code=303,
+        )
+
+    if session.status == SessionStatus.complete and user_b and user_b.completed_at:
+        return RedirectResponse(
+            url=f"/session/{session.id}/status",
+            status_code=303,
+        )
 
     invite_deep_link = build_partner_deep_link(token) or ""
     telegram_share_url = build_telegram_share_url(token) or ""
-    if not invite_deep_link:
-        logger.error(
-            "invite_page: cannot build deep link session_id=%s has_token=%s",
-            session_id,
-            bool(token),
-        )
+    bot_username = get_settings().resolve_bot_username() or RELATIONSHIP_BOT_USERNAME
 
-    bot_username = get_settings().resolve_bot_username() or ""
+    logger.info(
+        "invite.page session_token=%s session_id=%s respondent_1_completed=%s "
+        "respondent_2_completed=%s session_status=%s invite_link=%s",
+        token,
+        session.id,
+        bool(user_a.completed_at),
+        bool(user_b and user_b.completed_at),
+        _session_status_debug(session.status),
+        invite_deep_link,
+    )
 
     return _render(
         request,
         "invite.html",
         {
-            "title": "Sherikka yuborish",
+            "title": "Juftimga yuborish",
             "session": session,
             "invite_deep_link": invite_deep_link,
             "telegram_share_url": telegram_share_url,
             "invite_share_text": PARTNER_SHARE_TEXT,
-            "telegram_linked": bool(
-                session.initiator_telegram_id or user_a.telegram_chat_id
-            ),
             "bot_username": bot_username,
         },
     )
@@ -452,19 +579,19 @@ def session_status_page(
     session_complete = session.status == SessionStatus.complete
 
     if session_complete:
-        status_lead = "Ikkalangiz ham testni tugatdingiz. Natija tayyor."
-        status_hint = "Natijani pastdagi tugma orqali ochishingiz mumkin."
+        status_lead = "Ikkalangiz ham javob berdingiz. Suhbat natijasi tayyor."
+        status_hint = "Pastdagi tugma orqali natijani ochishingiz mumkin."
     elif partner_done:
-        status_lead = "Sherigingiz ham tugatdi. Natija tayyorlanmoqda."
-        status_hint = "Bir oz kuting — natija Telegram orqali ham keladi."
+        status_lead = "Juftingiz ham tugatdi. Natija tayyorlanmoqda."
+        status_hint = "Bir oz kuting — Telegram orqali ham xabar keladi."
     elif partner_started:
-        status_lead = "Sherigingiz testni boshlagan. Javoblarini kutyapmiz."
-        status_hint = "U tugatganda natija Telegram orqali keladi."
+        status_lead = "Juftingiz o‘z qismini boshlagan. Javoblarini kutyapmiz."
+        status_hint = "U tugatganda natija Telegram orqali ochiladi."
     elif initiator_done:
-        status_lead = "Siz tugatdingiz. Havolani sherikka yuboring."
-        status_hint = "Telegram botdagi «Sherikka yuborish» tugmasidan foydalaning."
+        status_lead = "Sizning qismingiz tayyor. Havolani juftingizga yuboring."
+        status_hint = "Telegram botdagi «Juftimga yuborish» tugmasidan foydalaning."
     else:
-        status_lead = "Test hali yakunlanmagan."
+        status_lead = "Suhbat hali yakunlanmagan."
         status_hint = "Avval o‘z savollaringizga javob bering."
 
     token = session.invite_token or ""
@@ -474,7 +601,7 @@ def session_status_page(
         request,
         "status.html",
         {
-            "title": "Test holati",
+            "title": "Juftlik suhbati holati",
             "session": session,
             "initiator_done": initiator_done,
             "partner_started": partner_started,
@@ -720,12 +847,13 @@ async def result_page(
         request,
         "result.html",
         {
-            "title": "Munosabat tahlili",
+            "title": "Juftlik suhbati",
             "session": session,
             "result": result,
             "experience": experience,
             "stage_labels": STAGE_LABELS,
             "premium_price": PREMIUM_PRICE_UZS,
+            "premium_price_label": premium_price_label(),
             "viewer_role": viewer_role.value,
         },
     )
@@ -776,6 +904,7 @@ def premium_page(
             "premium": premium,
             "stage_labels": STAGE_LABELS,
             "premium_price": PREMIUM_PRICE_UZS,
+            "premium_price_label": premium_price_label(),
             "paywall_headline": PAYWALL_HEADLINE,
             "paywall_lead": PAYWALL_LEAD,
             "paywall_tagline": PAYWALL_TAGLINE,

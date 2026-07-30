@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Qo‘shilish — Qadam{% endblock %}
+{% block title %}Juftlik suhbatiga taklif — boshlash{% endblock %}
 
 {% block body_class %}page-start{% endblock %}
 
 {% block content %}
 <div class="qd-shell">
     <section class="qd-hero qd-animate-in" style="padding-bottom: 0.5rem;">
-        <p class="qd-meta" style="margin-bottom: 0.75rem;">Munosabat tahlili</p>
+        <p class="qd-meta" style="margin-bottom: 0.75rem;">Juftlik suhbati</p>
         <h1 class="qd-hero__title" style="font-size: 1.75rem;">
-            Xush kelibsiz
+            Sizni Juftlik suhbatiga taklif qilishdi
         </h1>
         <p class="qd-hero__desc">
-            <strong>{{ user_a.name }}</strong> allaqachon javob berdi. Endi navbat sizda —
-            xuddi shu hayotiy vaziyatlarga o‘z fikringizni ayting.
+            <strong>{{ user_a.name }}</strong> o‘z javoblarini belgilab bo‘ldi.
+            Endi siz ham 12 ta hayotiy vaziyatga javob bering.
         </p>
-        <p class="qd-meta">Bu yerda to‘g‘ri yoki noto‘g‘ri javob yo‘q. Faqat siz qanday his qilishingiz muhim.</p>
+        <p class="qd-meta">O‘zingizga eng yaqin javobni tanlang. Bu yerda to‘g‘ri yoki noto‘g‘ri javob yo‘q.</p>
     </section>
 
     <section class="qd-card qd-card--form qd-animate-in qd-animate-in--delay">
@@ -66,7 +66,7 @@
             </div>
 
             <button type="submit" class="qd-btn qd-btn--primary qd-btn--full" id="join-submit" disabled>
-                Qo‘shilish va boshlash
+                O‘z qismimni boshlash
             </button>
         </form>
     </section>

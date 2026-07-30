@@ -3,7 +3,11 @@
     if (!form) return;
 
     const steps = Array.from(form.querySelectorAll(".quiz-step"));
-    const total = steps.length;
+    const configuredTotal = parseInt(form.dataset.questionTotal || "", 10);
+    const total =
+        Number.isFinite(configuredTotal) && configuredTotal > 0
+            ? configuredTotal
+            : steps.length;
     const prevBtn = document.getElementById("quiz-prev");
     const nextBtn = document.getElementById("quiz-next");
     const nav = document.getElementById("quiz-nav");
@@ -13,9 +17,9 @@
     const loadingEl = document.getElementById("quiz-loading");
     const loadingText = document.getElementById("loading-text");
     const messages = window.QADAM_LOADING_MESSAGES || [
-        "Javoblaringiz tahlil qilinmoqda...",
+        "Javoblaringiz saqlanmoqda...",
         "Bir oz sabr — bu bir daqiqadan kam vaqt oladi",
-        "Hayotiy vaziyatlar solishtirilmoqda...",
+        "Vaziyatlar juftingiz bilan solishtirish uchun tayyorlanmoqda...",
     ];
 
     let current = 0;
@@ -43,7 +47,7 @@
     function updateProgress() {
         const number = current + 1;
         const pct = pctForStep(current);
-        progressLabel.textContent = `Savol ${number}/${total}`;
+        progressLabel.textContent = `${number} / ${total}`;
         progressPct.textContent = `${pct}%`;
         progressFill.style.width = `${pct}%`;
     }
@@ -58,7 +62,7 @@
         const isLast = current === total - 1;
 
         nextBtn.disabled = !selected;
-        nextBtn.textContent = isLast ? "Natijani tayyorlash" : "Keyingi →";
+        nextBtn.textContent = isLast ? "Yakunlash" : "Keyingi →";
         nextBtn.type = isLast && selected ? "submit" : "button";
     }
 

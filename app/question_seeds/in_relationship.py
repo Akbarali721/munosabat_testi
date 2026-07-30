@@ -1,467 +1,334 @@
+"""Yangi turmush qurganlar — juftlik savollari (12 × 2)."""
+
 from app.question_seeds._helpers import QuestionSeed, _q
 
 STAGE = "in_relationship"
 
 
-def _qi(scenario_id, gender_target, dimension, text, options):
-    return _q(scenario_id, gender_target, dimension, text, options, stage=STAGE)
+def _pair(order: int) -> str:
+    return f"newlywed_{order:02d}"
+
+
+def _qi(
+    scenario_id: str,
+    gender_target: str,
+    dimension: str,
+    text: str,
+    option_specs: list[tuple[str, str]],
+    *,
+    question_code: str | None = None,
+) -> QuestionSeed:
+    return _q(
+        scenario_id,
+        gender_target,
+        dimension,
+        text,
+        option_specs,
+        stage=STAGE,
+        question_code=question_code,
+    )
+
+
+def _male(order: int, dimension: str, text: str, option_specs: list[tuple[str, str]]) -> QuestionSeed:
+    return _qi(
+        _pair(order),
+        "male",
+        dimension,
+        text,
+        option_specs,
+        question_code=f"newlywed_male_{order:02d}",
+    )
 
 
 IN_RELATIONSHIP_QUESTIONS: list[QuestionSeed] = [
+    # --- Female (same pair_key order; texts unchanged for partner flow) ---
     _qi(
-        "weekend_plan",
+        _pair(1),
         "female",
-        "priority_time",
-        (
-            "Dam olish kuni sevgan insoningiz bilan film ko‘rishni "
-            "oldindan kelishgansiz.\n"
-            "Shu kuni do‘stlaringiz ham anchadan beri rejalashtirgan "
-            "uchrashuvga chaqirdi."
-        ),
+        "emotional_needs",
+        "Oilamizda o‘zingni baxtli his qilishing uchun mendan eng ko‘p nimani kutasan?",
         [
-            ("Oldindan kelishilgan rejani saqlab, sevgan insonim bilan vaqt o‘tkazaman.", 4),
-            ("Vaziyatni ochiq tushuntirib, ikkalamizga mos boshqa vaqtni kelishaman.", 3),
-            ("Do‘stlarim bilan boraman va bu haqda keyinroq aytaman.", 2),
-            ("Qaysi reja menga qiziqroq bo‘lsa, o‘shani tanlayman.", 1),
+            ("Senga vaqt va e’tibor ajratishimni", "time_attention"),
+            ("Seni tushunib, tinglashimni", "listening_understanding"),
+            ("Mas’uliyatni sen bilan bo‘lishishimni", "shared_responsibility"),
+            ("Mehrlimni ochiq ko‘rsatishimni", "open_affection"),
         ],
+        question_code="newlywed_female_01",
     ),
     _qi(
-        "weekend_plan",
-        "male",
-        "priority_time",
-        (
-            "Dam olish kuni sevgan insoningiz bilan film ko‘rishni "
-            "oldindan kelishgansiz.\n"
-            "Shu kuni do‘stlaringiz ham anchadan beri rejalashtirgan "
-            "uchrashuvga chaqirdi."
-        ),
-        [
-            ("Oldindan kelishilgan rejani saqlab, sevgan insonim bilan vaqt o‘tkazaman.", 4),
-            ("Vaziyatni ochiq tushuntirib, ikkalamizga mos boshqa vaqtni kelishaman.", 3),
-            ("Do‘stlarim bilan boraman va bu haqda keyinroq aytaman.", 2),
-            ("Qaysi reja menga qiziqroq bo‘lsa, o‘shani tanlayman.", 1),
-        ],
-    ),
-    _qi(
-        "bad_mood",
+        _pair(2),
         "female",
-        "attention",
-        (
-            "Kunning oxirida kayfiyatingiz tushib, uyingizga qaytdingiz.\n"
-            "Sevgan insoningiz sizdagi o‘zgarishni sezib, nima bo‘lganini so‘radi.\n"
-            "Siz esa hozir bu haqda gaplashishga tayyor emassiz."
-        ),
+        "emotional_support",
+        "Xafa bo‘lganingda men qanday yo‘l tutishimni xohlaysan?",
         [
-            (
-                "Hozir gaplashishga tayyor emasligimni muloyim aytib, "
-                "keyinroq tushuntirishimni bildiraman.",
-                4,
-            ),
-            ("Biroz tinchlangach, nima bo‘lganini ochiq aytib beraman.", 3),
-            ("Hech narsa bo‘lmaganini aytib, o‘zimni undan uzoq tutaman.", 2),
-            ("U qayta-qayta so‘raganidan asabiylashib, keskin javob beraman.", 1),
+            ("Avval seni tinchgina tinglashimni", "quiet_listening"),
+            ("Nima bo‘lganini so‘rab, yechim izlashimni", "problem_solving"),
+            ("Senga mehr ko‘rsatib, yoningda qolishimni", "affection_presence"),
+            ("Tinchlanishing uchun biroz vaqt berishimni", "give_space"),
         ],
+        question_code="newlywed_female_02",
     ),
     _qi(
-        "bad_mood",
-        "male",
-        "attention",
-        (
-            "Kunning oxirida kayfiyatingiz tushib, uyingizga qaytdingiz.\n"
-            "Sevgan insoningiz sizdagi o‘zgarishni sezib, nima bo‘lganini so‘radi.\n"
-            "Siz esa hozir bu haqda gaplashishga tayyor emassiz."
-        ),
-        [
-            (
-                "Hozir gaplashishga tayyor emasligimni muloyim aytib, "
-                "keyinroq tushuntirishimni bildiraman.",
-                4,
-            ),
-            ("Biroz tinchlangach, nima bo‘lganini ochiq aytib beraman.", 3),
-            ("Hech narsa bo‘lmaganini aytib, o‘zimni undan uzoq tutaman.", 2),
-            ("U qayta-qayta so‘raganidan asabiylashib, keskin javob beraman.", 1),
-        ],
-    ),
-    _qi(
-        "social_media",
+        _pair(3),
         "female",
-        "trust_privacy",
-        (
-            "Qarama-qarshi jinsdagi eski tanishingiz sizga ijtimoiy tarmoq "
-            "orqali yozdi.\n"
-            "Sevgan insoningiz telefondagi xabarni tasodifan ko‘rib, "
-            "bu suhbatdan noqulay bo‘lganini aytdi."
-        ),
+        "financial_trust",
+        "Oilaviy xarajatlar haqida qanday yo‘l tutishimizni istaysan?",
         [
-            (
-                "Yozishma nima haqida ekanini ochiq tushuntirib, "
-                "uning xavotirini tinglayman.",
-                4,
-            ),
-            (
-                "Bu oddiy suhbat ekanini tushuntirib, kelajakda bunday "
-                "holatlarda bir-birimizga qanday chegara qo‘yishimizni kelishaman.",
-                3,
-            ),
-            (
-                "Hech qanday yomon niyat yo‘qligini aytib, "
-                "uning xavotirini ortiqcha deb hisoblayman.",
-                2,
-            ),
-            (
-                "Telefonim shaxsiy ekanini aytib, yozishmalarimni "
-                "tushuntirishga majbur emasman deb o‘ylayman.",
-                1,
-            ),
+            ("Barcha daromad va xarajatlarni ochiq gaplashishimizni", "open_finances"),
+            ("Asosiy xarajatlarni birga rejalashtirishimizni", "plan_expenses"),
+            ("Har birimizda shaxsiy pul ham bo‘lishini", "personal_money"),
+            ("Moliyaviy mas’uliyatni asosan sen boshqarishingni", "partner_manages"),
         ],
+        question_code="newlywed_female_03",
     ),
     _qi(
-        "social_media",
-        "male",
-        "trust_privacy",
-        (
-            "Qarama-qarshi jinsdagi eski tanishingiz sizga ijtimoiy tarmoq "
-            "orqali yozdi.\n"
-            "Sevgan insoningiz telefondagi xabarni tasodifan ko‘rib, "
-            "bu suhbatdan noqulay bo‘lganini aytdi."
-        ),
-        [
-            (
-                "Yozishma nima haqida ekanini ochiq tushuntirib, "
-                "uning xavotirini tinglayman.",
-                4,
-            ),
-            (
-                "Bu oddiy suhbat ekanini tushuntirib, kelajakda bunday "
-                "holatlarda bir-birimizga qanday chegara qo‘yishimizni kelishaman.",
-                3,
-            ),
-            (
-                "Hech qanday yomon niyat yo‘qligini aytib, "
-                "uning xavotirini ortiqcha deb hisoblayman.",
-                2,
-            ),
-            (
-                "Telefonim shaxsiy ekanini aytib, yozishmalarimni "
-                "tushuntirishga majbur emasman deb o‘ylayman.",
-                1,
-            ),
-        ],
-    ),
-    _qi(
-        "money_talk",
+        _pair(4),
         "female",
-        "money_values",
-        (
-            "Siz o‘zingiz uchun ancha qimmat narsa sotib olmoqchisiz.\n"
-            "Bu qaror sizning byudjetingizga ta’sir qilishi mumkin, lekin "
-            "bu haqda sevgan insoningiz bilan hali gaplashmagansiz."
-        ),
+        "financial_trust",
+        "Turmush o‘rtog‘ing sen bilan maslahatlashmasdan katta xarajat qilsa, qanday munosabat bildirasiz?",
         [
-            ("Avval bu xarid nega muhimligini aytib, uning fikrini so‘rayman.", 4),
-            (
-                "Xarid qilishdan oldin o‘zim uchun ham, munosabatimiz uchun "
-                "ham to‘g‘ri vaqtmi, shuni birga muhokama qilaman.",
-                3,
-            ),
-            ("Avval sotib olib, keyin vaziyatni tushuntiraman.", 2),
-            ("Bu mening shaxsiy pulim va qarorim deb hisoblayman.", 1),
+            ("Avval sababini xotirjam so‘raysan", "ask_calmly"),
+            ("Buni noto‘g‘ri deb, darhol e’tiroz bildirasiz", "object_immediately"),
+            ("Bir marta bo‘lsa, jiddiy muammo qilmaysiz", "one_time_ok"),
+            ("Keyingi safar uchun birgalikda qoida belgilaysiz", "set_rule_together"),
         ],
+        question_code="newlywed_female_04",
     ),
     _qi(
-        "money_talk",
-        "male",
-        "money_values",
-        (
-            "Siz o‘zingiz uchun ancha qimmat narsa sotib olmoqchisiz.\n"
-            "Bu qaror sizning byudjetingizga ta’sir qilishi mumkin, lekin "
-            "bu haqda sevgan insoningiz bilan hali gaplashmagansiz."
-        ),
-        [
-            ("Avval bu xarid nega muhimligini aytib, uning fikrini so‘rayman.", 4),
-            (
-                "Xarid qilishdan oldin o‘zim uchun ham, munosabatimiz uchun "
-                "ham to‘g‘ri vaqtmi, shuni birga muhokama qilaman.",
-                3,
-            ),
-            ("Avval sotib olib, keyin vaziyatni tushuntiraman.", 2),
-            ("Bu mening shaxsiy pulim va qarorim deb hisoblayman.", 1),
-        ],
-    ),
-    _qi(
-        "family_visit",
+        _pair(5),
         "female",
-        "family_values",
-        (
-            "Munosabatingiz jiddiylashib boryapti.\n"
-            "Sevgan insoningiz sizni yaqinlari bilan tanishtirmoqchi, "
-            "lekin siz hali bunga tayyor emassiz."
-        ),
+        "responsibility",
+        "Uy ishlarini qanday tashkil qilishimiz senga to‘g‘ri tuyuladi?",
         [
-            (
-                "Nega hozir tayyor emasligimni ochiq tushuntirib, "
-                "keyinroq aniq vaqt taklif qilaman.",
-                4,
-            ),
-            (
-                "U uchun bu muhimligini tushunib, o‘zimdagi xavotirni aytib, "
-                "birga qaror qilaman.",
-                3,
-            ),
-            (
-                "Uni xafa qilmaslik uchun rozi bo‘laman, "
-                "lekin ichimda noqulaylik qoladi.",
-                2,
-            ),
-            ("Bunday tanishtirishga hali erta deb, mavzuni yopaman.", 1),
+            ("Vazifalarni oldindan bo‘lib olishimiz", "divided_tasks"),
+            ("Kimning vaqti bo‘lsa, o‘sha bajarishi", "flexible_time"),
+            ("Bir-birimizga aytmasdan ham yordam berishimiz", "spontaneous_help"),
+            ("Har kim o‘ziga qulay bo‘lgan ishni bajarishi", "preferred_tasks"),
         ],
+        question_code="newlywed_female_05",
     ),
     _qi(
-        "family_visit",
-        "male",
-        "family_values",
-        (
-            "Munosabatingiz jiddiylashib boryapti.\n"
-            "Sevgan insoningiz sizni yaqinlari bilan tanishtirmoqchi, "
-            "lekin siz hali bunga tayyor emassiz."
-        ),
-        [
-            (
-                "Nega hozir tayyor emasligimni ochiq tushuntirib, "
-                "keyinroq aniq vaqt taklif qilaman.",
-                4,
-            ),
-            (
-                "U uchun bu muhimligini tushunib, o‘zimdagi xavotirni aytib, "
-                "birga qaror qilaman.",
-                3,
-            ),
-            (
-                "Uni xafa qilmaslik uchun rozi bo‘laman, "
-                "lekin ichimda noqulaylik qoladi.",
-                2,
-            ),
-            ("Bunday tanishtirishga hali erta deb, mavzuni yopaman.", 1),
-        ],
-    ),
-    _qi(
-        "compliment",
+        _pair(6),
         "female",
-        "attention",
-        "Uzoq vaqt maqtov yoki minnatdorchilik eshitmadingiz.\nSiz...",
+        "responsibility",
+        "Uy ishlarini bajarishga ulgurmasang, turmush o‘rtog‘ing qanday yo‘l tutishini kutasan?",
         [
-            ("O‘zimga kerak bo‘lsa, tinch aytyapman.", 4),
-            ("Kutaman — u band bo‘lishi mumkin.", 3),
-            ("Ichimda biroz xafa bo‘laman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Imkon bo‘lsa, yordam bersin", "help_if_can"),
+            ("Nima sabab bo‘lganini so‘rasin", "ask_why"),
+            ("Bu sening mas’uliyating deb hisoblasin", "your_duty"),
+            ("Ishlarni keyinroq birga bajarishni taklif qilsin", "postpone_together"),
         ],
+        question_code="newlywed_female_06",
     ),
     _qi(
-        "compliment",
-        "male",
-        "attention",
-        (
-            "Sherigingiz siz uchun ko‘p narsa qiladi,\n"
-            "lekin uzoq vaqtdan beri minnatdorchilik bildirmadingiz.\n"
-            "Siz..."
-        ),
+        _pair(7),
+        "female",
+        "boundaries",
+        "Oilangizdagi kelishmovchiliklarni ota-onaga aytish haqida qanday fikrdasan?",
         [
-            ("Bugundan boshlab e’tibor qarataman.", 4),
-            ("Kichik surpriz yoki maqtov aytaman.", 3),
-            ("Bu mayda narsa deb o‘ylayman.", 2),
-            ("U tushunadi deb bilaman, aytmasam ham.", 1),
+            ("Odatda er-xotin o‘zi hal qilishi kerak", "couple_resolves"),
+            ("Faqat jiddiy vaziyatda ota-onadan maslahat olish mumkin", "serious_only"),
+            ("Ota-onadan hech narsani yashirmaslik kerak", "no_secrets"),
+            ("Kimga aytilishi vaziyatga bog‘liq", "depends_situation"),
         ],
+        question_code="newlywed_female_07",
     ),
     _qi(
-        "apology",
+        _pair(8),
+        "female",
+        "boundaries",
+        "Turmush o‘rtog‘ing bilan onangiz yoki qarindoshlaringiz o‘rtasida tushunmovchilik bo‘lsa, qanday yo‘l tutasiz?",
+        [
+            ("Ikkala tomonni ham xotirjam tinglaysiz", "listen_both"),
+            ("Avvalo turmush o‘rtog‘ingizni himoya qilasiz", "protect_spouse"),
+            ("Avvalo ota-onangizning fikrini hurmat qilasiz", "respect_parents"),
+            ("Ularni o‘zaro gaplashtirib, murosaga keltirasiz", "mediate"),
+        ],
+        question_code="newlywed_female_08",
+    ),
+    _qi(
+        _pair(9),
         "female",
         "conflict_style",
-        "Kichik xato uchun sherigingiz uzr so‘radi.\nSiz...",
+        "Turmush o‘rtog‘ingiz bilan kelishmovchilik yuz bersa, odatda nima qilasiz?",
         [
-            ("Qabul qilaman — davom etamiz.", 4),
-            ("Uzr yetadi, lekin nima uchun bo‘lganini ham gaplashamiz.", 3),
-            ("Hali biroz og‘riq bor.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Darhol gaplashib, muammoni hal qilishga harakat qilasiz", "talk_now"),
+            ("Avval tinchlanish uchun biroz vaqt olasiz", "cool_down"),
+            ("U birinchi bo‘lib gap boshlashini kutasiz", "wait_partner"),
+            ("Mojaro kattalashmasligi uchun mavzuni yopasiz", "drop_topic"),
         ],
+        question_code="newlywed_female_09",
     ),
     _qi(
-        "apology",
-        "male",
+        _pair(10),
+        "female",
         "conflict_style",
-        "Kichik xato qildingiz — uzr so‘ramoqchisiz.\nSiz...",
+        "Turmush o‘rtog‘ingiz sizni xafa qilganini aytsa, birinchi munosabatingiz qanday bo‘ladi?",
         [
-            ("Samimiy uzr so‘rayman va nima o‘zgartirishni aytaman.", 4),
-            ("Qisqa uzr yetarli deb bilaman.", 3),
-            ("Vaqt o‘tsin, o‘zi tushunadi deb o‘ylayman.", 2),
-            ("Bu katta xato emas — uzr kerak emas.", 1),
+            ("Uni bo‘lmasdan tinglaysiz", "listen_first"),
+            ("Nima uchun bunday qilganingizni tushuntirasiz", "explain_why"),
+            ("Siz ham nimadan xafa bo‘lganingizni aytasiz", "share_hurt"),
+            ("Vaziyat tinchgach gaplashishni taklif qilasiz", "talk_when_calm"),
         ],
+        question_code="newlywed_female_10",
     ),
     _qi(
-        "future_step",
+        _pair(11),
         "female",
-        "future_vision",
-        (
-            "Turmush qurganingizga hali ko‘p bo‘lmagan.\n"
-            "{spouse_label_cap} kechqurun siz bilan birga vaqt o‘tkazishni xohlaydi, "
-            "siz esa kun oxirida biroz yolg‘iz qolib dam olishga ehtiyoj sezasiz."
-        ),
+        "future_expectations",
+        "Oilaviy kelajak uchun reja tuzishda eng muhim narsa nima?",
         [
-            (
-                "Hozir biroz dam olishim kerakligini tushuntirib, "
-                "keyin birga vaqt o‘tkazishni taklif qilaman.",
-                4,
-            ),
-            (
-                "Uning istagini ham tinglab, ikkalamizga mos "
-                "kundalik tartibni kelishib olaman.",
-                3,
-            ),
-            (
-                "Hech narsa tushuntirmay, telefonim yoki boshqa "
-                "mashg‘ulot bilan band bo‘lib qolaman.",
-                2,
-            ),
-            (
-                "Meni o‘zi tushunishi kerak deb o‘ylab, "
-                "e’tibor talab qilganidan asabiylashaman.",
-                1,
-            ),
+            ("Er-xotinning maqsadlarini birgalikda kelishib olish", "align_goals"),
+            ("Moliyaviy barqarorlikka erishish", "financial_stability"),
+            ("Uy va farzand masalasini oldindan rejalashtirish", "home_children_plan"),
+            ("Vaziyatga qarab yashash, ortiqcha reja qilmaslik", "flexible_life"),
         ],
+        question_code="newlywed_female_11",
     ),
     _qi(
-        "future_step",
-        "male",
-        "future_vision",
-        (
-            "Turmush qurganingizga hali ko‘p bo‘lmagan.\n"
-            "{spouse_label_cap} kechqurun siz bilan birga vaqt o‘tkazishni xohlaydi, "
-            "siz esa kun oxirida biroz yolg‘iz qolib dam olishga ehtiyoj sezasiz."
-        ),
-        [
-            (
-                "Hozir biroz dam olishim kerakligini tushuntirib, "
-                "keyin birga vaqt o‘tkazishni taklif qilaman.",
-                4,
-            ),
-            (
-                "Uning istagini ham tinglab, ikkalamizga mos "
-                "kundalik tartibni kelishib olaman.",
-                3,
-            ),
-            (
-                "Hech narsa tushuntirmay, telefonim yoki boshqa "
-                "mashg‘ulot bilan band bo‘lib qolaman.",
-                2,
-            ),
-            (
-                "Meni o‘zi tushunishi kerak deb o‘ylab, "
-                "e’tibor talab qilganidan asabiylashaman.",
-                1,
-            ),
-        ],
-    ),
-    _qi(
-        "habit_change",
+        _pair(12),
         "female",
-        "respect_listening",
-        (
-            "Siz aytgan kichik odatini (masalan, tartibsizlik)\n"
-            "u o‘zgartirmadi.\n"
-            "Siz..."
-        ),
+        "future_expectations",
+        "Ishingiz yoki daromadingiz sabab oilaga kamroq vaqt ajratayotganingizni sezsangiz, nima qilasiz?",
         [
-            ("Yana bir bor muloyim gaplashaman.", 4),
-            ("Kuzataman — vaqt kerak bo‘lishi mumkin.", 3),
-            ("Biroz charchagan his qilaman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Turmush o‘rtog‘ingiz bilan ochiq gaplashasiz", "open_talk"),
+            ("Bo‘sh kunlarda buning o‘rnini to‘ldirishga harakat qilasiz", "make_up_time"),
+            ("Oilangiz ishlayotganingizni tushunishini kutasiz", "expect_understanding"),
+            ("Ish va oilaga ajratiladigan vaqtni qayta rejalashtirasiz", "rebalance_time"),
+        ],
+        question_code="newlywed_female_12",
+    ),
+    # --- Male (Yangi turmush qurganlar — respondent erkak) ---
+    _male(
+        1,
+        "attention_and_affection",
+        "Ishdan charchab uyga kelganingizda, turmush o‘rtog‘ingizdan eng ko‘p nimani kutasiz?",
+        [
+            ("Meni iliq kutib olib, holimni so‘rashini", "warm_welcome"),
+            ("Biroz tinch qolishimga imkon berishini", "quiet_rest"),
+            ("Ovqat yoki boshqa amaliy g‘amxo‘rlik ko‘rsatishini", "practical_care"),
+            ("Yonimda o‘tirib, kunim qanday o‘tganini tinglashini", "listen_about_day"),
         ],
     ),
-    _qi(
-        "habit_change",
-        "male",
-        "respect_listening",
-        "Sherigingiz sizdan kichik o‘zgarish so‘radi — siz hali qilmadingiz.\nSiz...",
+    _male(
+        2,
+        "attention_and_affection",
+        "Turmush o‘rtog‘ingiz sizga mehrini qanday ko‘rsatsa, buni ko‘proq his qilasiz?",
         [
-            ("Eslab, o‘zgartirishga harakat qilaman.", 4),
-            ("Band edim — tez orada qilaman.", 3),
-            ("Bu unchalik muhim emas deb o‘ylayman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Menga iliq gaplar aytsa", "warm_words"),
+            ("Men uchun foydali biror ish qilsa", "helpful_act"),
+            ("Men bilan ko‘proq vaqt o‘tkazsa", "quality_time"),
+            ("Meni quchoqlab, yaqinlik ko‘rsatsa", "physical_affection"),
         ],
     ),
-    _qi(
-        "support_day",
-        "female",
-        "attention",
-        (
-            "Qiyin kuningizda sherigingiz qo‘llab-quvvatlash o‘rniga\n"
-            "maslahat berdi.\n"
-            "Siz..."
-        ),
+    _male(
+        3,
+        "money_and_expenses",
+        "Oiladagi katta xarajatlar qanday hal qilinishi kerak deb o‘ylaysiz?",
         [
-            ("«Hozir faqat eshitish kerak» deb tinch aytaman.", 4),
-            ("Ikkalasini ham qadrlayman — lekin tinglash muhimroq.", 3),
-            ("Biroz xafa bo‘laman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Er-xotin oldindan maslahatlashib hal qilishi kerak", "decide_together"),
+            ("Asosan pul topayotgan tomon qaror qilishi kerak", "earner_decides"),
+            ("Har kim o‘z pulini o‘zi boshqarishi kerak", "separate_money"),
+            ("Vaziyatga qarab, kim yaxshi tushunsa, o‘sha qaror qilishi kerak", "situational"),
         ],
     ),
-    _qi(
-        "support_day",
-        "male",
-        "attention",
-        "Sherigingiz qiyin kun o‘tkazdi — siz yechim taklif qildingiz.\nSiz...",
+    _male(
+        4,
+        "money_and_expenses",
+        "Turmush o‘rtog‘ingiz siz bilan maslahatlashmasdan katta xarajat qilsa, qanday munosabat bildirasiz?",
         [
-            ("Avval tinglayman, keyin maslahat beraman.", 4),
-            ("Qo‘llab-quvvatlash uchun yonida turaman.", 3),
-            ("Muammoni hal qilish yaxshiroq deb o‘ylayman.", 2),
-            ("U o‘zi hal qiladi deb bilaman.", 1),
+            ("Avval sababini xotirjam so‘rayman", "ask_calmly"),
+            ("Buni noto‘g‘ri deb, darhol e’tiroz bildiraman", "object_immediately"),
+            ("Bir marta bo‘lsa, jiddiy muammo qilmayman", "one_time_ok"),
+            ("Keyingi safar uchun birgalikda qoida belgilayman", "set_rule_together"),
         ],
     ),
-    _qi(
-        "jealousy_talk",
-        "female",
-        "trust_privacy",
-        "Qiziquv yoki revnak haqida gap ochildi.\nSiz...",
+    _male(
+        5,
+        "household_responsibility",
+        "Uy ishlari er-xotin o‘rtasida qanday taqsimlanishi kerak?",
         [
-            ("Ochiq va tinch gaplashaman.", 4),
-            ("His-tuyg‘ularimni aytyapman — hukm qilmayman.", 3),
-            ("Bu mavzuni yoqtirmayman, lekin gap bor.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Ikkalasi ham imkoniyatiga qarab bajarishi kerak", "shared_by_ability"),
+            ("Har kimning doimiy vazifasi bo‘lishi kerak", "fixed_roles"),
+            ("Uy ishlarining asosiy qismi ayolning vazifasi", "traditional_split"),
+            ("Kim bo‘sh bo‘lsa, o‘sha bajarishi kerak", "whoever_free"),
         ],
     ),
-    _qi(
-        "jealousy_talk",
-        "male",
-        "trust_privacy",
-        "Sherigingiz sizda qiziquv bor-yo‘qligini so‘radi.\nSiz...",
+    _male(
+        6,
+        "household_responsibility",
+        "Turmush o‘rtog‘ingiz uy ishlarini bajarishga ulgurmasa, siz qanday yo‘l tutasiz?",
         [
-            ("Samimiy va tinch javob beraman.", 4),
-            ("Bu normal savol deb qabul qilaman.", 3),
-            ("Bu menga yoqmaydi deb o‘ylayman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Imkonim bo‘lsa, yordam beraman", "help_if_can"),
+            ("Nima sabab bo‘lganini so‘rayman", "ask_why"),
+            ("Bu uning mas’uliyati deb hisoblayman", "their_duty"),
+            ("Ishlarni keyinroq birga bajarishni taklif qilaman", "postpone_together"),
         ],
     ),
-    _qi(
-        "quality_time",
-        "female",
-        "priority_time",
-        "Bir hafta «bandman» deb o‘tdi — siz uchun vaqt topilmadi.\nSiz...",
+    _male(
+        7,
+        "parents_and_relatives",
+        "Oilangizdagi kelishmovchiliklarni ota-onaga aytish haqida qanday fikrdasiz?",
         [
-            ("Tushunaman, lekin birga vaqt kerak deb aytaman.", 4),
-            ("Kichik uchrashuv taklif qilaman.", 3),
-            ("O‘zimga vaqt ajrataman — kutaman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Odatda er-xotin o‘zi hal qilishi kerak", "couple_resolves"),
+            ("Faqat jiddiy vaziyatda ota-onadan maslahat olish mumkin", "serious_only"),
+            ("Ota-onadan hech narsani yashirmaslik kerak", "no_secrets"),
+            ("Kimga aytilishi vaziyatga bog‘liq", "depends_situation"),
         ],
     ),
-    _qi(
-        "quality_time",
-        "male",
-        "priority_time",
-        "Bir haftadan beri band edingiz — sherigingiz uchun vaqt kam.\nSiz...",
+    _male(
+        8,
+        "parents_and_relatives",
+        "Turmush o‘rtog‘ingiz bilan onangiz yoki qarindoshlaringiz o‘rtasida tushunmovchilik bo‘lsa, qanday yo‘l tutasiz?",
         [
-            ("Bu hafta maxsus vaqt ajrataman.", 4),
-            ("Qisqa uchrashuv yoki qo‘ng‘iroq qilaman.", 3),
-            ("Ish tugagach ko‘ramiz deb o‘ylayman.", 2),
-            ("Hozircha bilmayman.", 1),
+            ("Ikkala tomonni ham xotirjam tinglayman", "listen_both"),
+            ("Avvalo turmush o‘rtog‘imni himoya qilaman", "protect_spouse"),
+            ("Avvalo ota-onamning fikrini hurmat qilaman", "respect_parents"),
+            ("Ularni o‘zaro gaplashtirib, murosaga keltiraman", "mediate"),
+        ],
+    ),
+    _male(
+        9,
+        "conflict_resolution",
+        "Turmush o‘rtog‘ingiz bilan kelishmovchilik yuz bersa, odatda nima qilasiz?",
+        [
+            ("Darhol gaplashib, muammoni hal qilishga harakat qilaman", "talk_now"),
+            ("Avval tinchlanish uchun biroz vaqt olaman", "cool_down"),
+            ("U birinchi bo‘lib gap boshlashini kutaman", "wait_partner"),
+            ("Mojaro kattalashmasligi uchun mavzuni yopaman", "drop_topic"),
+        ],
+    ),
+    _male(
+        10,
+        "conflict_resolution",
+        "Turmush o‘rtog‘ingiz sizni xafa qilganini aytsa, birinchi munosabatingiz qanday bo‘ladi?",
+        [
+            ("Uni bo‘lmasdan tinglayman", "listen_first"),
+            ("Nima uchun bunday qilganimni tushuntiraman", "explain_why"),
+            ("Men ham nimadan xafa bo‘lganimni aytaman", "share_hurt"),
+            ("Vaziyat tinchgach gaplashishni taklif qilaman", "talk_when_calm"),
+        ],
+    ),
+    _male(
+        11,
+        "future_plans",
+        "Oilaviy kelajak uchun reja tuzishda eng muhim narsa nima?",
+        [
+            ("Er-xotinning maqsadlarini birgalikda kelishib olish", "align_goals"),
+            ("Moliyaviy barqarorlikka erishish", "financial_stability"),
+            ("Uy va farzand masalasini oldindan rejalashtirish", "home_children_plan"),
+            ("Vaziyatga qarab yashash, ortiqcha reja qilmaslik", "flexible_life"),
+        ],
+    ),
+    _male(
+        12,
+        "future_plans",
+        "Ishingiz yoki daromadingiz sabab oilaga kamroq vaqt ajratayotganingizni sezsangiz, nima qilasiz?",
+        [
+            ("Turmush o‘rtog‘im bilan ochiq gaplashaman", "open_talk"),
+            ("Bo‘sh kunlarda buning o‘rnini to‘ldirishga harakat qilaman", "make_up_time"),
+            ("Oilam uchun ishlayotganimni tushunishini kutaman", "expect_understanding"),
+            ("Ish va oilaga ajratiladigan vaqtni qayta rejalashtiraman", "rebalance_time"),
         ],
     ),
 ]

@@ -171,7 +171,7 @@ class StartCommandHandlerTests(unittest.TestCase):
             args, kwargs = mock_client.send_message.call_args
             self.assertEqual(args[0], 555)
             self.assertEqual(args[1], telegram_welcome())
-            self.assertEqual(kwargs.get("button_text"), "❤️ Munosabat testini boshlash")
+            self.assertEqual(kwargs.get("button_text"), "💬 Juftlik suhbatini boshlash")
             self.assertIn("/start", kwargs.get("web_app_url", ""))
             self.assertNotEqual(args[1], invite_invalid())
 
@@ -385,7 +385,7 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
                 headers={"X-Telegram-Init-Data": "fake"},
             )
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("Sizlarning munosabat tahlili tayyor", resp.text)
+        self.assertIn("Sizning suhbat natijangiz", resp.text)
 
     def test_complete_idempotent(self):
         session = self._create_initiator_done()
@@ -418,21 +418,20 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
                 settings.telegram_bot_token = "token"
                 settings.resolve_bot_username.return_value = "testbot"
                 settings.webapp_base_url = "https://app.example"
-            resp = self.client.get(f"/invite/{session.id}")
+            resp = self.client.get(f"/relationship/session/{session.invite_token}/invite")
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("Birinchi qism tayyor", resp.text)
-        self.assertIn("Siz — testni tugatdingiz", resp.text)
-        self.assertIn("Sherigingiz — javobini kutyapmiz", resp.text)
-        self.assertIn("Havolani ulashish", resp.text)
-        self.assertIn("Test holatini ko‘rish", resp.text)
-        self.assertIn("t.me/share/url", resp.text)
+        self.assertIn("Sizning qismingiz tayyor", resp.text)
+        self.assertIn("12 ta vaziyatga javob berdingiz", resp.text)
+        self.assertIn("Juftingiz — javobini kutyapmiz", resp.text)
+        self.assertIn("Juftimga yuborish", resp.text)
+        self.assertIn("Holatni ko‘rish", resp.text)
         self.assertNotIn("TELEGRAM_BOT_USERNAME", resp.text)
         self.assertNotIn("Havola faqat siz ikkalangiz uchun", resp.text)
         self.db.refresh(session)
         self.assertTrue(session.invite_token)
         self.assertIn(session.invite_token, resp.text)
         self.assertIn("rel_invite_", resp.text)
-        self.assertIn("t.me%2Ftestbot%3Fstart%3Drel_invite_", resp.text)
+        self.assertIn("t.me/testbot", resp.text)
 
     def test_invite_page_friendly_error_without_bot_username(self):
         session = self._create_initiator_done()
@@ -445,13 +444,17 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
                 settings.telegram_bot_username = None
                 settings.telegram_bot_token = None
                 settings.resolve_bot_username.return_value = None
-            with self.assertLogs("app.routers.pages", level="ERROR") as logs:
-                resp = self.client.get(f"/invite/{session.id}")
+            resp = self.client.get(f"/relationship/session/{session.invite_token}/invite")
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("Ulashish havolasini tayyorlab bo‘lmadi", resp.text)
-        self.assertNotIn("TELEGRAM_BOT_USERNAME", resp.text)
-        self.assertNotIn("Havolani ulashish", resp.text)
-        self.assertTrue(any("cannot build deep link" in line for line in logs.output))
+        self.assertIn("Juftimga yuborish", resp.text)
+        self.assertIn("munosabat_testBot", resp.text)
+        self.assertIn("rel_invite_", resp.text)
+
+    def test_invite_legacy_redirects_to_token_url(self):
+        session = self._create_initiator_done()
+        resp = self.client.get(f"/invite/{session.id}", follow_redirects=False)
+        self.assertEqual(resp.status_code, 303)
+        self.assertIn(f"/relationship/session/{session.invite_token}/invite", resp.headers["location"])
 
     def test_invite_redirects_if_user_a_incomplete(self):
         session = self._create_initiator_done()
@@ -495,7 +498,7 @@ class WebAppFlowIntegrationTests(unittest.TestCase):
         self.assertEqual(user_b.telegram_chat_id, 2002)
         self.assertEqual(user_b.name, PENDING_PARTNER_NAME)
         call_kwargs = mock_client.send_message.call_args.kwargs
-        self.assertEqual(call_kwargs.get("button_text"), "❤️ Testni boshlash")
+        self.assertEqual(call_kwargs.get("button_text"), "▶️ O‘z qismimni boshlash")
         self.assertIn("web_app_url", call_kwargs)
 
     def test_third_user_blocked(self):

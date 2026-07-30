@@ -215,7 +215,7 @@ def build_premium_result_copy(result: SessionResult) -> PremiumResultCopy:
         profile_summary=_profile_summary(
             name_a, name_b, result.compatibility_score, map_items
         ),
-        map_intro="Har bir yo‘nalish — sizlarni yanada yaqinlashtirishi mumkin bo‘lgan xarita.",
+        map_intro="Har bir yo‘nalish — sizlarni yanada yaqinlashtirishi mumkin bo‘lgan mavzu.",
         map_items=map_items,
         partner_insights=[
             PartnerInsight(

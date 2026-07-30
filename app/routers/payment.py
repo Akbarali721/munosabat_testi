@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session as DbSession
 
 from app.config import get_settings
-from app.constants import PREMIUM_PRICE_UZS
+from app.constants import PREMIUM_PRICE_UZS, premium_price_label
 from app.database import get_db
 from app.models import PaymentOrder, PaymentStatus
 from app.services.payment import (
@@ -36,6 +36,9 @@ def _render_payment_page(request: Request, session, *, role: str, order: Payment
             "title": "Premium to‘lov",
             "session": session,
             "premium_price": PREMIUM_PRICE_UZS,
+            "premium_price_label": premium_price_label(
+                order.amount_uzs if order else None
+            ),
             "viewer_role": role,
             "payment_demo": settings.payment_demo,
             "premium_granted": granted,

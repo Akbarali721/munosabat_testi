@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Natija — Munosabat tahlili{% endblock %}
+{% block title %}Sizning suhbat natijangiz{% endblock %}
 
 {% block body_class %}page-result page-result-experience{% endblock %}
 
@@ -8,27 +8,27 @@
 <div class="qd-shell" id="result-root" data-session-id="{{ session.id }}">
     <section class="qd-result-intro" id="result-intro">
         <header class="qd-reveal-header qd-animate-in">
-            <h1 class="qd-result-headline">Sizlarning munosabat tahlili tayyor</h1>
+            <h1 class="qd-result-headline">Sizning suhbat natijangiz</h1>
             <p class="qd-reveal-names">{{ experience.partner_names }}</p>
             <p class="qd-meta">{{ experience.stage_label }}</p>
         </header>
 
-        <article class="qd-card qd-card--score qd-animate-in qd-animate-in--delay">
-            <p class="qd-score-label">Bir-biringizni tushunish darajasi</p>
-            <p class="qd-score-value">{{ experience.score }}%</p>
-            <p class="qd-warm-text">{{ experience.intro_summary }}</p>
+        <article class="qd-card qd-card--score qd-card--score-secondary qd-animate-in qd-animate-in--delay">
+            <p class="qd-warm-text qd-warm-text--lead">{{ experience.intro_summary }}</p>
+            <p class="qd-score-label qd-score-label--secondary">Umumiy yaqinlik ko‘rsatkichi</p>
+            <p class="qd-score-value qd-score-value--secondary">{{ experience.score }}%</p>
         </article>
 
         <div class="qd-reveal-nav">
             <button type="button" class="qd-btn qd-btn--primary qd-btn--full" id="result-continue-btn">
-                Davom etish
+                Natijani ko‘rish
             </button>
         </div>
     </section>
 
     <section class="qd-result-details" id="result-details" hidden>
         <header class="qd-reveal-header qd-animate-in">
-            <h1 class="qd-result-headline qd-result-headline--sm">Sizlarning bepul tahlilingiz</h1>
+            <h1 class="qd-result-headline qd-result-headline--sm">Sizning suhbat natijangiz</h1>
             <p class="qd-meta">{{ experience.partner_names }} · {{ experience.stage_label }}</p>
         </header>
 
@@ -69,7 +69,7 @@
                     <p>Javoblaringiz asosida shaxsiy xulosa tayyorlandi…</p>
                     <p>To‘liq matn ochilgach ko‘rinadi…</p>
                 </div>
-                <p class="qd-result-premium__hint">To‘liq ochilganda bu yerda sizlarga mos tahlil chiqadi</p>
+                <p class="qd-result-premium__hint">To‘liq ochilganda bu yerda sizlarga mos tushuncha chiqadi</p>
                 {% else %}
                 <div class="qd-result-premium__body qd-result-premium__body--open">
                     {% if block.body %}
@@ -90,20 +90,21 @@
             {% if not experience.premium_unlocked %}
             <div class="qd-card qd-card--premium qd-premium-cta">
                 <a href="/session/{{ session.id }}/premium/payment?role={{ viewer_role }}" class="qd-btn qd-btn--primary qd-btn--full">
-                    To‘liq tahlilni ikkalangiz uchun ochish — {{ "{:,}".format(premium_price).replace(",", " ") }} so‘m
+                    Chuqurroq tahlilni ochish
                 </a>
-                <p class="qd-premium-cta__note">Bir marta to‘lov qilinadi. Admin tasdiqlagach natija ikkalangizga ochiladi.</p>
+                <p class="qd-premium-cta__price">{{ premium_price_label }}</p>
+                <p class="qd-premium-cta__note">Bir marta to‘lov qilinadi. Admin tasdiqlagach ikkalangiz uchun ochiladi.</p>
             </div>
             {% else %}
-            <p class="qd-premium-unlocked-note">✅ To‘liq tahlil ochilgan — ikkalangiz ham ko‘ra olasiz.</p>
+            <p class="qd-premium-unlocked-note">✅ Chuqurroq tahlil ochilgan — ikkalangiz ham ko‘ra olasiz.</p>
             <a href="/session/{{ session.id }}/challenge" class="qd-btn qd-btn--secondary qd-btn--full">
-                7 kunlik Challenge sahifasini ochish
+                7 kunlik mashqlar sahifasi
             </a>
             {% endif %}
         </section>
 
-        <a href="/" class="qd-btn qd-btn--ghost qd-btn--full qd-reveal-footer-link">
-            Yangi tahlil boshlash
+        <a href="/start" class="qd-btn qd-btn--ghost qd-btn--full qd-reveal-footer-link">
+            Yangi suhbat boshlash
         </a>
     </section>
 </div>

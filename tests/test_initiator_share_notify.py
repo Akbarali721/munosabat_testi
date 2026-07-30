@@ -46,11 +46,11 @@ class InviteShareHelpersTests(unittest.TestCase):
         self.assertIn("rel_invite_tok_abc", share or "")
         self.assertIsNotNone(kb)
         rows = kb["inline_keyboard"]
-        self.assertEqual(rows[0][0]["text"], "💌 Sherikka yuborish")
+        self.assertEqual(rows[0][0]["text"], "💌 Juftimga yuborish")
         self.assertIn("share/url", rows[0][0]["url"])
-        self.assertEqual(rows[1][0]["text"], "⏳ Test holatini ko‘rish")
+        self.assertEqual(rows[1][0]["text"], "⏳ Holatni ko‘rish")
         self.assertIn("/session/session-1/status", rows[1][0]["web_app"]["url"])
-        self.assertIn("Qadam", PARTNER_SHARE_TEXT)
+        self.assertIn("Juftlik suhbati", PARTNER_SHARE_TEXT)
 
 
 class InitiatorShareNotifyTests(unittest.TestCase):
@@ -112,7 +112,7 @@ class InitiatorShareNotifyTests(unittest.TestCase):
         self.assertEqual(args[1], initiator_answers_saved())
         markup = kwargs.get("reply_markup")
         self.assertIsNotNone(markup)
-        self.assertEqual(markup["inline_keyboard"][0][0]["text"], "💌 Sherikka yuborish")
+        self.assertEqual(markup["inline_keyboard"][0][0]["text"], "💌 Juftimga yuborish")
 
         self.db.refresh(session)
         self.assertIsNotNone(session.initiator_share_notified_at)

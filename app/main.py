@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Qadam — Munosabat tahlili",
-    description="Juftliklarga bir-birini yaxshiroq tushunish va munosabatlarini mustahkamlashga yordam beradigan platforma",
+    title="Juftlik suhbati",
+    description="Juftliklar uchun samimiy suhbat va bir-birini yaxshiroq tushunishga yordam beradigan platforma",
     lifespan=lifespan,
 )
 

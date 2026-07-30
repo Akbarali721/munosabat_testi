@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Test holati — Qadam{% endblock %}
+{% block title %}Holat — Juftlik suhbati{% endblock %}
 
 {% block body_class %}page-invite{% endblock %}
 
@@ -8,20 +8,20 @@
 <div class="qd-shell">
     <section class="qd-invite qd-animate-in">
         <span class="qd-invite__emoji" aria-hidden="true">⏳</span>
-        <h1 class="qd-invite__title">Test holati</h1>
+        <h1 class="qd-invite__title">Juftlik suhbati holati</h1>
         <p class="qd-invite__subtitle">{{ status_lead }}</p>
 
         <div class="qd-progress-steps" role="list">
             <div class="qd-progress-step {% if initiator_done %}qd-progress-step--done{% else %}qd-progress-step--wait{% endif %}" role="listitem">
                 <span class="qd-progress-step__icon" aria-hidden="true">{% if initiator_done %}✅{% else %}⏳{% endif %}</span>
-                <span>Siz — {% if initiator_done %}testni tugatdingiz{% else %}jarayonda{% endif %}</span>
+                <span>Siz — {% if initiator_done %}javob berdingiz{% else %}jarayonda{% endif %}</span>
             </div>
             <div class="qd-progress-step {% if partner_done %}qd-progress-step--done{% elif partner_started %}qd-progress-step--wait{% else %}qd-progress-step--wait{% endif %}" role="listitem">
                 <span class="qd-progress-step__icon" aria-hidden="true">{% if partner_done %}✅{% elif partner_started %}⏳{% else %}📩{% endif %}</span>
                 <span>
-                    Sherigingiz —
+                    Juftingiz —
                     {% if partner_done %}
-                        testni tugatdi
+                        javob berdi
                     {% elif partner_started %}
                         javob berayapti
                     {% else %}
@@ -36,7 +36,7 @@
             class="qd-btn qd-btn--primary qd-btn--full qd-invite-share"
             href="/session/{{ session.id }}/result"
         >
-            📊 Natijani ko‘rish
+            💬 Natijani ko‘rish
         </a>
         {% elif telegram_share_url and not partner_started %}
         <a
@@ -45,7 +45,7 @@
             target="_blank"
             rel="noopener"
         >
-            💌 Havolani qayta ulashish
+            💌 Juftimga yuborish
         </a>
         {% endif %}
 

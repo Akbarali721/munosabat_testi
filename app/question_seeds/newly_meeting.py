@@ -1,351 +1,307 @@
+"""Endi tanishayotganlar — juftlik savollari (12 × 2)."""
+
 from app.question_seeds._helpers import QuestionSeed, _q
 
 STAGE = "newly_meeting"
 
 
-def _qn(scenario_id, gender_target, dimension, text, options):
-    return _q(scenario_id, gender_target, dimension, text, options, stage=STAGE)
+def _qn(
+    scenario_id: str,
+    gender_target: str,
+    dimension: str,
+    text: str,
+    option_specs: list[tuple[str, str]],
+) -> QuestionSeed:
+    return _q(scenario_id, gender_target, dimension, text, option_specs, stage=STAGE)
 
 
 NEWLY_MEETING_QUESTIONS: list[QuestionSeed] = [
     _qn(
-        "promise_call",
-        "female",
-        "responsibility_trust",
-        (
-            "Yigit sizga:\n"
-            "«Bugun soat 20:00 da qo‘ng‘iroq qilaman.»\n"
-            "dedi.\n"
-            "Lekin 21:30 da:\n"
-            "«Uzr, ish chiqib qoldi.»\n"
-            "deb yozdi.\n"
-            "Sizning birinchi fikringiz?"
-        ),
-        [
-            ("Hayotda shunday bo‘lib turadi.", 4),
-            ("Oldinroq yozganida yaxshi bo‘lardi.", 3),
-            ("Va’dasiga unchalik amal qilmaydigan odam ekan.", 2),
-            ("Ishonchim biroz kamayadi.", 1),
-        ],
-    ),
-    _qn(
-        "promise_call",
+        "emotional_support",
         "male",
-        "responsibility_trust",
-        (
-            "Siz qizga:\n"
-            "«Bugun soat 20:00 da qo‘ng‘iroq qilaman.»\n"
-            "dedingiz.\n"
-            "Lekin ish chiqib qoldi.\n"
-            "Siz nima qilasiz?"
-        ),
+        "emotional_support",
+        "Xafa bo‘lganingda yaqin insoningdan nimani ko‘proq kutasan?",
         [
-            ("Darrov xabar beraman.", 4),
-            ("Ishim tugagach qo‘ng‘iroq qilaman.", 3),
-            ("Keyin uzr so‘rayman.", 2),
-            ("Buni katta muammo deb hisoblamayman.", 1),
+            ("Meni tinchgina tinglashini", "listening"),
+            ("Menga maslahat berishini", "problem_solving"),
+            ("Meni quchoqlab, yonimda bo‘lishini", "affection"),
+            ("Biroz vaqt yolg‘iz qoldirishini", "space"),
         ],
     ),
     _qn(
-        "small_attention",
+        "emotional_support",
         "female",
-        "attention",
-        (
-            "Bir hafta oldin siz:\n"
-            "«Qahvani yoqtirmayman.»\n"
-            "degandingiz.\n"
-            "Keyingi uchrashuvda u buni eslab qoldi.\n"
-            "Sizning reaksiyangiz?"
-        ),
+        "emotional_support",
+        "Xafa bo‘lganingda mendan nimani ko‘proq kutasan?",
         [
-            ("Mayda narsalarni eslab qolishi menga juda yoqadi.", 4),
-            ("Yoqimli holat.", 3),
-            ("Hayron bo‘laman.", 2),
-            ("Bunga unchalik ahamiyat bermayman.", 1),
+            ("Seni tinchgina tinglashimni", "listening"),
+            ("Muammoni hal qilishga yordam berishimni", "problem_solving"),
+            ("Yoningda bo‘lib, mehr ko‘rsatishimni", "affection"),
+            ("Biroz vaqt yolg‘iz qoldirishimni", "space"),
         ],
     ),
     _qn(
-        "small_attention",
+        "love_expression",
         "male",
-        "attention",
-        (
-            "Bir hafta oldin qiz:\n"
-            "«Qahvani yoqtirmayman.»\n"
-            "degandi.\n"
-            "Keyingi uchrashuvda ichimlik buyurtma qilayotganda siz..."
-        ),
+        "love_language",
+        "Senga insonning sevgisi ko‘proq nimada bilinadi?",
         [
-            ("Buni eslab, unga choy taklif qilaman.", 4),
-            ("Esimda bo‘lsa, albatta e’tibor beraman.", 3),
-            ("O‘sha paytda o‘zidan so‘rayman.", 2),
-            ("Bunday mayda narsalarni eslab yurmayman.", 1),
+            ("Menga vaqt ajratishida", "time"),
+            ("Chiroyli so‘zlar aytishida", "words"),
+            ("Amalda yordam berishida", "acts_of_service"),
+            ("Mayda narsalarni eslab qolishida", "remembering"),
         ],
     ),
     _qn(
-        "phone_attention",
+        "love_expression",
         "female",
-        "respect_attention",
-        "Suhbat davomida u telefoniga tez-tez qarab turdi.\nSiz...",
+        "love_language",
+        "Mening sevgimni ko‘proq nimada his qilasan?",
         [
-            ("Balki muhim ishidir deb o‘ylayman.", 4),
-            ("Kim yozayotganiga qiziqaman.", 3),
-            ("O‘zimni noqulay his qilaman.", 2),
-            ("Keyin bu haqda gaplashaman.", 1),
+            ("Senga vaqt ajratganimda", "time"),
+            ("Hislarimni so‘z bilan aytganimda", "words"),
+            ("Amalda yordam berganimda", "acts_of_service"),
+            ("Sen haqingdagi mayda narsalarni eslab qolganimda", "remembering"),
         ],
     ),
     _qn(
-        "phone_attention",
+        "emotional_triggers",
         "male",
-        "respect_attention",
-        "Suhbat paytida telefoningizga muhim xabar keldi.\nSiz...",
+        "sensitivity",
+        "Munosabatda seni eng ko‘p nima ranjitadi?",
         [
-            ("Telefonni chetga qo‘yaman.", 4),
-            ("Uzr so‘rab, tez javob beraman.", 3),
-            ("Vaqti-vaqti bilan tekshirib turaman.", 2),
-            ("Telefonimga qarashni muammo deb bilmayman.", 1),
+            ("Beparvolik", "indifference"),
+            ("Yolg‘on gapirish", "dishonesty"),
+            ("Meni boshqalar bilan solishtirish", "comparison"),
+            ("Hislarimni jiddiy qabul qilmaslik", "invalidation"),
         ],
     ),
     _qn(
-        "being_late",
+        "emotional_triggers",
         "female",
-        "responsibility",
-        "Yigit uchrashuvga 30 daqiqa kech qoldi.\nSiz...",
+        "sensitivity",
+        "Munosabatimizda seni eng ko‘p nima ranjitishi mumkin?",
         [
-            ("Tushunaman, bo‘lib turadi.", 4),
-            ("Sababini bilishni xohlayman.", 3),
-            ("Xafa bo‘laman.", 2),
-            ("Bu menga hurmatsizlikdek tuyuladi.", 1),
+            ("Senga befarq bo‘lib qolishim", "indifference"),
+            ("Rostini aytmasligim", "dishonesty"),
+            ("Seni boshqa yigitlar bilan solishtirishim", "comparison"),
+            ("Hislaringni jiddiy qabul qilmasligim", "invalidation"),
         ],
     ),
     _qn(
-        "being_late",
+        "conflict_resolution",
         "male",
-        "responsibility",
-        "Uchrashuvga kech qolayotganingizni bildingiz.\nSiz...",
+        "communication",
+        "Biror muammo bo‘lsa, uni qanday hal qilishni afzal ko‘rasan?",
         [
-            ("Oldindan yozaman.", 4),
-            ("Yetib borgach tushuntiraman.", 3),
-            ("Faqat uzr so‘rayman.", 2),
-            ("20-30 daqiqa katta muammo emas deb o‘ylayman.", 1),
+            ("Darhol ochiq gaplashishni", "talk_immediately"),
+            ("Avval o‘ylab, keyin gaplashishni", "think_then_talk"),
+            ("Qarshi tomon birinchi bo‘lib gap boshlashini", "partner_starts"),
+            ("Vaqt o‘tishi bilan o‘zi hal bo‘lishini", "wait_it_out"),
         ],
     ),
     _qn(
-        "friends_plan",
+        "conflict_resolution",
         "female",
-        "priority_time",
-        (
-            "Bugun uchrashishga kelishgansiz.\n"
-            "Yigit:\n"
-            "«Do‘stlarim chaqirib qoldi. Bugun bora olmayman.»\n"
-            "dedi.\n"
-            "Siz..."
-        ),
+        "communication",
+        "Oramizda muammo paydo bo‘lsa, uni qanday hal qilishni xohlaysan?",
         [
-            ("Tushunaman.", 4),
-            ("Oldindan aytgani yaxshi bo‘lardi.", 3),
-            ("Men bilan uchrashuvni muhim deb bilmaganiga xafa bo‘laman.", 2),
-            ("Endi tashabbusni undan kutaman.", 1),
+            ("Darhol ochiq gaplashishni", "talk_immediately"),
+            ("Avval o‘ylab, keyin gaplashishni", "think_then_talk"),
+            ("Men birinchi bo‘lib gap boshlashimni", "partner_starts"),
+            ("Biroz vaqt o‘tib, vaziyat tinchishini", "wait_it_out"),
         ],
     ),
     _qn(
-        "friends_plan",
+        "communication_frequency",
         "male",
-        "priority_time",
-        "Do‘stlaringiz sizni chaqirdi.\nLekin qiz bilan ham uchrashuv rejangiz bor.\nSiz...",
+        "attachment",
+        "Yaqin insoning band bo‘lib, kun davomida kam yozsa, sen nima deb o‘ylaysan?",
         [
-            ("Avval qiz bilan kelishilgan rejani bajaraman.", 4),
-            ("Vaziyatni tushuntirib, boshqa vaqt taklif qilaman.", 3),
-            ("Do‘stlarim bilan ketaman, keyin unga yozaman.", 2),
-            ("Kim birinchi chaqirgan bo‘lsa, o‘sha reja qoladi.", 1),
+            ("Ishlari ko‘p ekanini tushunaman", "understand_busy"),
+            ("Menga qiziqishi kamaygan deb xavotirlanaman", "fear_losing_interest"),
+            ("O‘zim birinchi bo‘lib yozaman", "initiate_contact"),
+            ("Men ham ataylab yozmay turaman", "mirror_distance"),
         ],
     ),
     _qn(
-        "first_bill",
+        "communication_frequency",
         "female",
-        "money_values",
-        (
-            "Uchrashuv oxirida hisob keldi.\n"
-            "Yigit:\n"
-            "«Hisobni ikkalamiz bo‘lib to‘laylik.»\n"
-            "dedi.\n"
-            "Siz..."
-        ),
+        "attachment",
+        "Men band bo‘lib, kun davomida kam yozsam, qanday munosabat bildirasan?",
         [
-            ("Men uchun bu normal.", 4),
-            ("Vaziyatga qarayman.", 3),
-            ("Birinchi uchrashuvda yigit to‘lagani ma’qul.", 2),
-            ("Bu meni noqulay qiladi.", 1),
+            ("Ishlarim ko‘pligini tushunasan", "understand_busy"),
+            ("Senga qiziqishim kamaygan deb xavotirlanasan", "fear_losing_interest"),
+            ("O‘zing birinchi bo‘lib yozasan", "initiate_contact"),
+            ("Sen ham ataylab yozmay turasan", "mirror_distance"),
         ],
     ),
     _qn(
-        "first_bill",
+        "emotional_safety",
         "male",
-        "money_values",
-        "Uchrashuv oxirida hisob keldi.\nSiz odatda...",
+        "trust",
+        "O‘zingni munosabatda qachon xavfsiz his qilasan?",
         [
-            ("O‘zim to‘layman.", 4),
-            ("Vaziyatga qarayman.", 3),
-            ("Bo‘lib to‘lashni taklif qilaman.", 2),
-            ("Qizning fikrini so‘rayman.", 1),
+            ("Menga doimo rost gapirilganda", "honesty"),
+            ("Hislar haqida ochiq gaplashilganda", "open_talk"),
+            ("Va’dalar bajarilganda", "reliability"),
+            ("Qanday holatda bo‘lsam ham qabul qilinganimda", "unconditional"),
         ],
     ),
     _qn(
-        "different_opinion",
+        "emotional_safety",
         "female",
-        "conflict_style",
-        "Suhbatda fikringiz bir xil chiqmadi.\nYigitning qaysi munosabati sizga ma’qul?",
+        "trust",
+        "Munosabatimizda o‘zingni qachon xavfsiz his qilasan?",
         [
-            ("Tinch gaplashsa.", 4),
-            ("Hazil bilan vaziyatni yumshatsa.", 3),
-            ("Ovozini ko‘tarmasdan o‘z fikrida tursa.", 2),
-            ("Jim bo‘lib qolsa.", 1),
+            ("Men senga doimo rost gapirganimda", "honesty"),
+            ("Hislarimiz haqida ochiq gaplashganimizda", "open_talk"),
+            ("Bergan va’dalarimni bajarganimda", "reliability"),
+            ("Seni qanday bo‘lsang, shunday qabul qilganimda", "unconditional"),
         ],
     ),
     _qn(
-        "different_opinion",
+        "conflict_goal",
         "male",
         "conflict_style",
-        "Suhbatda qiz bilan fikringiz bir xil chiqmadi.\nSiz...",
+        "Sevgan insoning bilan kelishmovchilik bo‘lsa, senga nima muhimroq?",
         [
-            ("Tinch gaplashaman.", 4),
-            ("Biroz tanaffus qilib, keyin gaplashaman.", 3),
-            ("O‘z fikrimni himoya qilaman.", 2),
-            ("Mavzuni yopib qo‘yaman.", 1),
+            ("Kim haq ekanini aniqlash", "being_right"),
+            ("Bir-birimizni tushunish", "understanding"),
+            ("Tezroq yarashib olish", "quick_reconcile"),
+            ("Bunday holat boshqa takrorlanmasligi", "prevent_repeat"),
         ],
     ),
     _qn(
-        "mother_call",
+        "conflict_goal",
         "female",
-        "family_values",
-        "Uchrashuv vaqtida uning onasi qo‘ng‘iroq qildi.\nSiz...",
+        "conflict_style",
+        "Oramizda kelishmovchilik bo‘lsa, sen uchun nima muhimroq?",
         [
-            ("Bemalol javob bersin.", 4),
-            ("Mendan uzr so‘rab javob bersa yaxshi.", 3),
-            ("Keyinroq javob bersa ham bo‘lardi.", 2),
-            ("Bu holat menga yoqmaydi.", 1),
+            ("Kim haq ekanini aniqlash", "being_right"),
+            ("Bir-birimizni tushunish", "understanding"),
+            ("Tezroq yarashib olish", "quick_reconcile"),
+            ("Bu holat boshqa takrorlanmasligi", "prevent_repeat"),
         ],
     ),
     _qn(
-        "mother_call",
+        "important_dates",
         "male",
-        "family_values",
-        "Uchrashuv vaqtida onangiz qo‘ng‘iroq qildi.\nSiz...",
+        "attention",
+        "Yaqin insoning sen uchun muhim sanani unutib qo‘ysa, qanday his qilasan?",
         [
-            ("Qizdan uzr so‘rab, qisqa javob beraman.", 4),
-            ("Keyinroq qayta qo‘ng‘iroq qilaman.", 3),
-            ("Tez javob berib olaman.", 2),
-            ("Vaziyatga qarayman.", 1),
+            ("Juda xafa bo‘laman", "very_hurt"),
+            ("Sababini so‘rab, tushunishga harakat qilaman", "ask_why"),
+            ("Muhim emasdek ko‘rsataman, lekin ichimda qoladi", "hide_hurt"),
+            ("Sanalardan ko‘ra kundalik munosabat muhim deb hisoblayman", "daily_over_dates"),
         ],
     ),
     _qn(
-        "private_secret",
+        "important_dates",
         "female",
-        "trust_privacy",
-        (
-            "Siz unga faqat ikkalangiz biladigan gapni aytdingiz.\n"
-            "Keyinroq dugonangiz ham shu gapni bilishini bildingiz.\n"
-            "Siz..."
-        ),
+        "attention",
+        "Men sen uchun muhim sanani unutib qo‘ysam, qanday yo‘l tutasan?",
         [
-            ("Darrov undan so‘rayman.", 4),
-            ("Avval aniqlayman.", 3),
-            ("Ishonchim kamayadi.", 2),
-            ("Juda xafa bo‘laman.", 1),
+            ("Juda qattiq xafa bo‘lasan", "very_hurt"),
+            ("Sababini so‘rab, tushunishga harakat qilasan", "ask_why"),
+            ("Muhim emasdek ko‘rsatasan, lekin ichingda qoladi", "hide_hurt"),
+            ("Sanalardan ko‘ra kundalik munosabat muhim deb hisoblaysan", "daily_over_dates"),
         ],
     ),
     _qn(
-        "private_secret",
+        "vulnerability",
         "male",
-        "trust_privacy",
-        "Qiz sizga shaxsiy gapini aytdi.\nSiz...",
+        "openness",
+        "Qiyin vaziyatga tushganingda odatda nima qilasan?",
         [
-            ("Hech kimga aytmayman.", 4),
-            ("Juda yaqin odamimga aytishim mumkin deb o‘ylayman.", 2),
-            ("Muhim bo‘lmasa aytib yuborishim mumkin.", 1),
-            ("Sir saqlashga harakat qilaman.", 3),
+            ("Yaqin insonim bilan bo‘lishaman", "share_openly"),
+            ("Hammasini o‘zim hal qilishga harakat qilaman", "handle_alone"),
+            ("Faqat eng ishongan odamimga aytaman", "trusted_only"),
+            ("Muammoni ichimda saqlayman", "keep_inside"),
         ],
     ),
     _qn(
-        "future_talk",
+        "vulnerability",
         "female",
+        "openness",
+        "Qiyin vaziyatga tushganingda odatda qanday yo‘l tutasan?",
+        [
+            ("Men bilan ochiq bo‘lishasan", "share_openly"),
+            ("Muammoni o‘zing hal qilishga harakat qilasan", "handle_alone"),
+            ("Faqat juda ishonganingdagina menga aytasan", "trusted_only"),
+            ("Muammoni ichingda saqlaysan", "keep_inside"),
+        ],
+    ),
+    _qn(
+        "personal_space",
+        "male",
+        "boundaries",
+        "Munosabatda shaxsiy erkinlik haqida qanday fikrdasan?",
+        [
+            ("Har kimning o‘z vaqti va do‘stlari bo‘lishi kerak", "independence"),
+            ("Ko‘p vaqtni birga o‘tkazish kerak", "togetherness"),
+            ("Erkinlik bo‘lishi kerak, lekin hamma narsani aytib turish lozim", "informed_freedom"),
+            ("Bu insonlar o‘rtasidagi ishonchga bog‘liq", "trust_based"),
+        ],
+    ),
+    _qn(
+        "personal_space",
+        "female",
+        "boundaries",
+        "Munosabatda shaxsiy erkinlik haqida qanday fikrdasan?",
+        [
+            ("Har birimizning o‘z vaqtimiz va do‘stlarimiz bo‘lishi kerak", "independence"),
+            ("Ko‘proq vaqtni birga o‘tkazishimiz kerak", "togetherness"),
+            ("Erkinlik bo‘lishi kerak, lekin hamma narsani aytib turish lozim", "informed_freedom"),
+            ("Bu o‘rtamizdagi ishonchga bog‘liq", "trust_based"),
+        ],
+    ),
+    _qn(
         "future_vision",
-        (
-            "Yigit sizdan:\n"
-            "«Kelajak haqida qanday o‘ylaysiz?»\n"
-            "deb so‘radi.\n"
-            "Siz..."
-        ),
+        "male",
+        "relationship_expectations",
+        "Kelajakdagi munosabatingni qanday tasavvur qilasan?",
         [
-            ("Bu savol menga yoqadi.", 4),
-            ("Hali bu mavzu uchun ertaroq deb o‘ylayman.", 3),
-            ("Keyinroq gaplashgan ma’qul.", 2),
-            ("Bunday savol meni noqulay qiladi.", 1),
+            ("Tinch va barqaror", "calm_stable"),
+            ("Romantik va hislarga boy", "romantic"),
+            ("Birgalikda rivojlanadigan", "growing_together"),
+            ("Erkin, lekin bir-birini qo‘llab-quvvatlaydigan", "supportive_freedom"),
         ],
     ),
     _qn(
-        "future_talk",
-        "male",
         "future_vision",
-        "Siz qizdan kelajak haqida so‘ramoqchisiz.\nSiz...",
-        [
-            ("Bu muhim mavzu deb hisoblayman.", 4),
-            ("Bir oz tanigach so‘rayman.", 3),
-            ("Hozircha erta deb o‘ylayman.", 2),
-            ("Umuman shoshilmayman.", 1),
-        ],
-    ),
-    _qn(
-        "interrupting",
         "female",
-        "respect_listening",
-        "Suhbatdoshingiz o‘z fikrini aytayotganida siz odatda…",
+        "relationship_expectations",
+        "Kelajakdagi munosabatimizni qanday tasavvur qilasan?",
         [
-            ("Gapini tugatgunicha diqqat bilan tinglayman.", 4),
-            ("Tinglab, keyin aniqlashtiruvchi savol beraman.", 3),
-            ("Fikrimni aytish uchun tezroq suhbatga qo‘shilaman.", 2),
-            ("Ko‘pincha gapini tugatmasidan fikrimni aytib yuboraman.", 1),
+            ("Tinch va barqaror", "calm_stable"),
+            ("Romantik va hislarga boy", "romantic"),
+            ("Birgalikda rivojlanadigan", "growing_together"),
+            ("Erkin, lekin bir-birini qo‘llab-quvvatlaydigan", "supportive_freedom"),
         ],
     ),
     _qn(
-        "interrupting",
+        "inner_needs",
         "male",
-        "respect_listening",
-        "Suhbatdoshingiz o‘z fikrini aytayotganida siz odatda…",
+        "emotional_needs",
+        "Seni chin dildan tushunishlari uchun inson nimani bilishi kerak?",
         [
-            ("Gapini tugatgunicha diqqat bilan tinglayman.", 4),
-            ("Tinglab, keyin aniqlashtiruvchi savol beraman.", 3),
-            ("Fikrimni aytish uchun tezroq suhbatga qo‘shilaman.", 2),
-            ("Ko‘pincha gapini tugatmasidan fikrimni aytib yuboraman.", 1),
+            ("Men hislarimni har doim ham ayta olmasligimni", "hard_to_express"),
+            ("Ba’zan menga ko‘proq e’tibor kerakligini", "needs_attention"),
+            ("Men kuchli ko‘rinsam ham, ichimda xavotirlarim borligini", "hidden_worry"),
+            ("Menga so‘zlardan ko‘ra munosabat va harakat muhimligini", "actions_over_words"),
         ],
     ),
     _qn(
-        "initiative",
+        "inner_needs",
         "female",
-        "communication_initiative",
-        (
-            "So‘nggi paytlarda suhbatni ko‘pincha tanishayotgan insoningiz "
-            "boshlab bermoqda. Siz odatda…"
-        ),
+        "emotional_needs",
+        "Seni chin dildan tushunishim uchun nimani bilishim kerak?",
         [
-            ("Men ham muntazam ravishda birinchi bo‘lib yozaman.", 4),
-            ("Ba’zan o‘zim yozaman, ba’zan undan xabar kutaman.", 3),
-            ("Ko‘pincha u yozishini kutaman, keyin javob beraman.", 2),
-            ("O‘zim birinchi yozishga deyarli ehtiyoj sezmayman.", 1),
-        ],
-    ),
-    _qn(
-        "initiative",
-        "male",
-        "communication_initiative",
-        (
-            "So‘nggi paytlarda suhbatni ko‘pincha tanishayotgan insoningiz "
-            "boshlab bermoqda. Siz odatda…"
-        ),
-        [
-            ("Men ham muntazam ravishda birinchi bo‘lib yozaman.", 4),
-            ("Ba’zan o‘zim yozaman, ba’zan undan xabar kutaman.", 3),
-            ("Ko‘pincha u yozishini kutaman, keyin javob beraman.", 2),
-            ("O‘zim birinchi yozishga deyarli ehtiyoj sezmayman.", 1),
+            ("Hislaringni har doim ham ochiq ayta olmasligingni", "hard_to_express"),
+            ("Ba’zan senga ham ko‘proq e’tibor kerakligini", "needs_attention"),
+            ("Kuchli ko‘rinsang ham, ichingda xavotirlaring borligini", "hidden_worry"),
+            ("Senga so‘zlardan ko‘ra munosabat va harakat muhimligini", "actions_over_words"),
         ],
     ),
 ]

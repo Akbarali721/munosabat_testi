@@ -77,7 +77,7 @@ class TelegramClient:
     def start_relationship_reply_keyboard(self, web_app_url: str) -> dict[str, Any]:
         return {
             "keyboard": [
-                [{"text": "❤️ Munosabat testini boshlash", "web_app": {"url": web_app_url}}]
+                [{"text": "💬 Juftlik suhbatini boshlash", "web_app": {"url": web_app_url}}]
             ],
             "resize_keyboard": True,
             "is_persistent": True,

@@ -516,23 +516,23 @@ def build_result_experience(
 
     free_blocks = [
         ResultBlock(
-            emoji="💪",
-            title="Sizlarning kuchli tomoningiz",
+            emoji="🤝",
+            title="Bir xil qarashlaringiz",
             body=_strength_block(result),
         ),
         ResultBlock(
             emoji="⚖️",
-            title="Qarashlaringiz farq qiladigan nuqta",
+            title="Farqli kutishlaringiz",
             body=_difference_block(result),
         ),
         ResultBlock(
             emoji="💬",
-            title="Sizlarning muloqot uslubingiz",
+            title="Muloqot uslubingiz",
             body=_communication_block(result.comparisons, result.compatibility_score),
         ),
         ResultBlock(
             emoji="✨",
-            title="Bugun sinab ko‘ring",
+            title="Gaplashib olish uchun savol",
             body=_tip_block(result),
         ),
     ]

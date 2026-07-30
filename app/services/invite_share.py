@@ -7,25 +7,29 @@ from urllib.parse import quote
 
 from app.config import get_settings
 
+RELATIONSHIP_BOT_USERNAME = "munosabat_testBot"
+
 PARTNER_SHARE_TEXT = (
-    "Men Qadam’da munosabat testini boshladim.\n\n"
-    "Bizning umumiy natijamizni bilish uchun "
-    "siz ham savollarga javob bering 👇"
+    "Men Juftlik suhbatini boshladim.\n\n"
+    "Bir-biringizni yaxshiroq tushunish uchun "
+    "siz ham 12 ta savolga javob bering 👇"
 )
 
 INITIATOR_COMPLETE_MESSAGE = (
-    "Siz testning birinchi qismini yakunladingiz ✅\n\n"
-    "Endi havolani sherigingizga yuboring. "
-    "U ham savollarga javob bergach, sizning umumiy natijangiz tayyor bo‘ladi."
+    "Sizning qismingiz tayyor ✅\n\n"
+    "Endi havolani juftingizga yuboring. "
+    "U ham javob bergach, suhbat natijasi ochiladi."
 )
+
+
+def _relationship_bot_username() -> str:
+    return get_settings().resolve_bot_username() or RELATIONSHIP_BOT_USERNAME
 
 
 def build_partner_deep_link(invite_token: str) -> str | None:
     if not invite_token:
         return None
-    username = get_settings().resolve_bot_username()
-    if not username:
-        return None
+    username = _relationship_bot_username()
     return f"https://t.me/{username}?start=rel_invite_{invite_token}"
 
 
@@ -52,7 +56,7 @@ def initiator_invite_keyboard(invite_token: str, session_id: str) -> dict[str, A
     status_url = build_status_webapp_url(session_id)
     return {
         "inline_keyboard": [
-            [{"text": "💌 Sherikka yuborish", "url": share_url}],
-            [{"text": "⏳ Test holatini ko‘rish", "web_app": {"url": status_url}}],
+            [{"text": "💌 Juftimga yuborish", "url": share_url}],
+            [{"text": "⏳ Holatni ko‘rish", "web_app": {"url": status_url}}],
         ]
     }
